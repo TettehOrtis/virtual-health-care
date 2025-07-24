@@ -5,7 +5,7 @@ import { verifyToken } from "@/middleware/auth";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === "GET") {
         try {
-            const { userId } = verifyToken(req);
+            const { supabaseId } = verifyToken(req) as { supabaseId: string };
             const { patientId } = req.query;
 
             if (!patientId || typeof patientId !== 'string') {
@@ -13,8 +13,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             }
 
             const doctor = await prisma.doctor.findUnique({
-                where: { userId }
+                where: { supabaseId } 
             });
+            if (!doctor) {
+                return res.status(404).json({ message: "Doctor not found" });
+            }
 
             if (!doctor) {
                 return res.status(404).json({ message: "Doctor not found" });

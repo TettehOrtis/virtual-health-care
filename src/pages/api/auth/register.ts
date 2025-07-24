@@ -1,164 +1,116 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { prisma } from "@/lib/prisma";
+import { PrismaClient } from "@prisma/client";
+import { createClient } from "@supabase/supabase-js";
+
+const prisma = new PrismaClient();
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method not allowed" });
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
+
+  const {
+    email,
+    password,
+    fullName,
+    role,
+    dateOfBirth,
+    gender,
+    phone,
+    address,
+    specialization
+  } = req.body;
+
+  if (!email || !password || !fullName || !role) {
+    return res.status(400).json({
+      message: "Email, password, full name, and role are required."
+    });
   }
 
   try {
-    const { fullName, email, password, role, dateOfBirth, gender, phone, address, specialization } = req.body;
-
-    // Log the incoming request for debugging
-    console.log("Incoming Registration Request:", {
-      fullName, email, role, specialization,
-      hasDateOfBirth: !!dateOfBirth,
-      hasGender: !!gender,
-      hasPhone: !!phone,
-      hasAddress: !!address,
-      // Don't log the password for security reasons
-    });
-
-    // Validate required fields
-    if (!fullName || !email || !password || !role) {
-      return res.status(400).json({
-        message: "Missing required fields",
-        details: "Full name, email, password, and role are required."
-      });
-    }
-
-    // Role-specific validation
-    if (role === "PATIENT" && (!dateOfBirth || !gender)) {
-      return res.status(400).json({
-        message: "Missing required patient fields",
-        details: "Date of birth and gender are required for patient registration."
-      });
-    }
-
-    if (role === "DOCTOR" && !specialization) {
-      return res.status(400).json({
-        message: "Missing required doctor fields",
-        details: "Specialization is required for doctor registration."
-      });
-    }
-
-    // Check if the email already exists in the database
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-      include: {
-        doctor: true,
-        patient: true
-      }
-    });
-
-    if (existingUser) {
-      // If the user exists but has no doctor/patient profile, we could repair it here
-      if (role === "DOCTOR" && !existingUser.doctor) {
-        try {
-          // Attempt to create the missing doctor profile
-          const doctor = await prisma.doctor.create({
-            data: {
-              userId: existingUser.id,
-              specialization,
-              phone: phone || "",
-              address: address || "",
-            },
-          });
-
-          return res.status(200).json({
-            message: "Doctor profile created for existing user",
-            user: {
-              id: existingUser.id,
-              fullName: existingUser.fullName,
-              email: existingUser.email,
-              role: existingUser.role,
-            },
-            doctor: {
-              id: doctor.id,
-              specialization: doctor.specialization
-            }
-          });
-        } catch (repairError) {
-          console.error("Failed to repair doctor profile:", repairError);
-          // Continue to the normal conflict response
-        }
-      }
-
-      // Normal conflict response
-      return res.status(409).json({
-        message: "Email already registered",
-        details: "This email address is already associated with an account. Please use a different email or try logging in."
-      });
-    }
-
-    // Use a transaction to ensure both user and role-specific profile are created
-    const result = await prisma.$transaction(async (prisma) => {
-      // Create a new user
-      const user = await prisma.user.create({
+    // Step 1: Create user in Supabase
+    const { data: { user: supabaseUser }, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
         data: {
           fullName,
-          email,
-          password, // Store the password directly without hashing
-          role,
-        },
-      });
-
-      // Based on the role, create additional profile
-      if (role === "PATIENT") {
-        const patient = await prisma.patient.create({
-          data: {
-            userId: user.id,
-            dateOfBirth: new Date(dateOfBirth),
-            gender,
-            phone: phone || "",
-            address: address || "",
-          },
-        });
-
-        return { user, patient };
-      } else if (role === "DOCTOR") {
-        const doctor = await prisma.doctor.create({
-          data: {
-            userId: user.id,
-            specialization,
-            phone: phone || "",
-            address: address || "",
-          },
-        });
-
-        return { user, doctor };
+          role
+        }
       }
-
-      return { user };
     });
 
-    // Return success response (excluding password)
-    const { user, patient, doctor } = result;
-    const { password: _, ...userWithoutPassword } = user;
-
-    return res.status(201).json({
-      message: "User registered successfully",
-      user: userWithoutPassword,
-      ...(patient && { patient: { id: patient.id } }),
-      ...(doctor && { doctor: { id: doctor.id } })
-    });
-  } catch (error: any) {
-    console.error("Registration error:", error);
-
-    // Handle Prisma errors
-    if (error.code === 'P2002' && error.meta?.target?.includes('email')) {
-      return res.status(409).json({
-        message: "Email already registered",
-        details: "This email address is already associated with an account."
+    if (authError || !supabaseUser) {
+      return res.status(400).json({
+        message: "Failed to create user account",
+        error: authError?.message || "Unknown error"
       });
     }
 
-    // Log detailed error for debugging
-    console.error("Registration Error:", error);
+    // Step 2: Create user in our database
+    const user = await prisma.user.create({
+      data: {
+        email,
+        fullName,
+        role,
+        supabaseId: supabaseUser.id,
+        ...(role === 'PATIENT' && {
+          patient: {
+            create: {
+              dateOfBirth: new Date(dateOfBirth).toISOString(),
+              gender,
+              phone,
+              address
+            }
+          }
+        }),
+        ...(role === 'DOCTOR' && {
+          doctor: {
+            create: {
+              specialization,
+              phone,
+              address
+            }
+          }
+        })
+      },
+      include: {
+        patient: role === 'PATIENT' ? true : undefined,
+        doctor: role === 'DOCTOR' ? true : undefined
+      }
+    });
 
+    // Step 3: Send verification email
+    const { error: sendEmailError } = await supabase.auth.admin.generateLink({
+      type: "magiclink",
+      email,
+      options: {
+        redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/verify`
+      }
+    });
+
+    if (sendEmailError) {
+      console.error("Failed to send verification email:", sendEmailError);
+    }
+
+    return res.status(201).json({
+      message: "Registration successful. Please check your email to verify your account.",
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Registration error:", error);
     return res.status(500).json({
-      message: "Registration failed",
-      details: error.message || "An internal server error occurred"
+      message: "Internal server error",
+      error: error instanceof Error ? error.message : "Unknown error"
     });
   }
 }

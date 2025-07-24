@@ -19,11 +19,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const token = authHeader.split(' ')[1];
 
     // Verify the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string, supabaseId: string };
 
     // Get user data from database
     const user = await prisma.user.findUnique({
-      where: { id: decoded.userId },
+      where: { supabaseId: decoded.supabaseId },
       select: {
         id: true,
         email: true,

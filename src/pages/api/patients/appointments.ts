@@ -1,6 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PrismaClient } from "@prisma/client";
 import jwt from "jsonwebtoken";
+import { AppointmentNotificationService } from "@/lib/email/appointment-notifications";
+import { AppointmentNotificationData } from '@/lib/email/appointment-notifications';
 
 const prisma = new PrismaClient();
 
@@ -8,7 +10,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Extract authorization token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: "No token provided" });
+        return res.status(401).json({ message: "No token provided" }); 
     }
 
     const token = authHeader.split(' ')[1];
@@ -19,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Get patient information
         const patient = await prisma.patient.findFirst({
-            where: { userId: decoded.userId }
+            where: { supabaseId: decoded.userId } 
         });
 
         if (!patient) {
@@ -76,13 +78,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     status: "PENDING"
                 },
                 include: {
-                    doctor: {
+                    doctor: { include: { user: true } },
+                    patient: {
                         include: {
                             user: true
                         }
                     }
                 }
             });
+
+            // Send appointment booking notifications
+            try {
+                // Format appointment data for notification service
+                const notificationData: AppointmentNotificationData = {
+                    appointment: {
+                        ...appointment,
+                        date: appointment.date.toISOString(),
+                        notes: appointment.notes || undefined
+                    },
+                    patientName: appointment.patient.user.fullName,
+                    doctorName: appointment.doctor.user.fullName,
+                    type: 'BOOKING'
+                };
+                
+                await AppointmentNotificationService.sendNotification(notificationData);
+            } catch (error) {
+                console.error('Failed to send appointment notification:', error);
+                // Don't fail the appointment creation if email fails
+            }
 
             return res.status(201).json({
                 message: "Appointment booked successfully",

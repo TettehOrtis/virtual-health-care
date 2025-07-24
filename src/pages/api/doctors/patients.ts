@@ -2,19 +2,20 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 
-const verifyToken = (req: NextApiRequest): { userId: string } => {
+const verifyToken = (req: NextApiRequest): { supabaseId: string } => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error("No token provided");
     }
 
     const token = authHeader.split(' ')[1];
-    return jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { supabaseId: string };
+    return decoded;
 };
 
-const getDoctorByUserId = async (userId: string) => {
+const getDoctorByUserId = async (supabaseId: string) => {
     const doctor = await prisma.doctor.findFirst({
-        where: { userId },
+        where: { supabaseId },
         include: {
             user: {
                 select: { fullName: true }
@@ -31,8 +32,8 @@ const getDoctorByUserId = async (userId: string) => {
 
 const getPatients = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
-        const { userId } = verifyToken(req);
-        const doctor = await getDoctorByUserId(userId);
+        const { supabaseId } = verifyToken(req);
+        const doctor = await getDoctorByUserId(supabaseId);
 
         // Find patients who have appointments with this doctor
         const patients = await prisma.patient.findMany({

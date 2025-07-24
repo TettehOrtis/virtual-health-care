@@ -15,8 +15,8 @@ import { verifyToken } from "@/middleware/auth";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     // Verify authentication token and extract userId
-    const { userId } = verifyToken(req);
-    if (!userId) {
+    const { supabaseId } = verifyToken(req);
+    if (!supabaseId) {
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (req.method === "GET") {
       // Find the doctor profile with associated user data
       const doctor = await prisma.doctor.findUnique({
-        where: { userId },
+        where: { supabaseId },
         include: {
           user: {
             select: {
@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Update doctor profile
       const updatedDoctor = await prisma.doctor.update({
-        where: { userId },
+        where: { supabaseId },
         data: {
           ...(specialization && { specialization }),
           ...(phone && { phone }),

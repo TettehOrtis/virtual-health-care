@@ -31,6 +31,7 @@ interface Appointment {
 
 interface Patient {
   id: string;
+  supabaseId: string;
   user: {
     fullName: string;
     email: string;
@@ -39,6 +40,8 @@ interface Patient {
 
 interface Prescription {
   id: string;
+  patientId: string;
+  doctorId: string;
   medication: string;
   dosage: string;
   instructions: string;

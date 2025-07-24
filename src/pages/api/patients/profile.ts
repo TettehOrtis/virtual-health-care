@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (req.method === "GET") {
             // Fetch patient profile
             const patient = await prisma.patient.findUnique({
-                where: { userId: user.userId },
+                where: { supabaseId: user.supabaseId },
                 include: { user: true },
             });
 
@@ -31,12 +31,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
             // Update patient profile
             const updatedPatient = await prisma.patient.update({
-                where: { userId: user.userId },
+                where: { supabaseId: user.supabaseId },
                 data: {
-                    phone: phone || undefined,
-                    address: address || undefined,
-                    medicalHistory: medicalHistory || undefined,
-                    gender: gender || undefined,
+                    phone: phone ? phone : undefined,
+                    address: address ? address : undefined,
+                    medicalHistory: medicalHistory ? medicalHistory : undefined,
+                    gender: gender ? gender : undefined,
                 },
             });
 

@@ -17,14 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Verify authentication token and extract userId
-        const { userId } = verifyToken(req);
-        if (!userId) {
+        const { supabaseId } = verifyToken(req);
+        if (!supabaseId) {
             return res.status(401).json({ error: "Unauthorized: Invalid token" });
         }
 
         // Find the doctor
         const doctor = await prisma.doctor.findUnique({
-            where: { userId }
+            where: { supabaseId }
         });
 
         if (!doctor) {

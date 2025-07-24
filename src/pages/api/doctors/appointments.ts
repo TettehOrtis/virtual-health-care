@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
+import { sendAppointmentRescheduledNotification } from "@/lib/notifications";
 
 // Helper function to verify token and get userId
 const verifyToken = (req: NextApiRequest): { userId: string } => {
@@ -14,9 +15,9 @@ const verifyToken = (req: NextApiRequest): { userId: string } => {
 };
 
 // Helper function to get doctor by userId
-const getDoctorByUserId = async (userId: string) => {
+const getDoctorByUserId = async (supabaseId: string) => {
     const doctor = await prisma.doctor.findFirst({
-        where: { userId },
+        where: { supabaseId },
         include: {
             user: {
                 select: { fullName: true }
@@ -102,7 +103,7 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
         if (status) {
             const validStatusTransitions: Record<string, string[]> = {
                 'PENDING': ['APPROVED', 'REJECTED'],
-                'APPROVED': ['COMPLETED', 'CANCELED'],
+                'APPROVED': ['COMPLETED', 'CANCELED', 'PENDING'],  // Allow rescheduling by going back to PENDING
                 'REJECTED': [],
                 'COMPLETED': [],
                 'CANCELED': []
@@ -117,18 +118,43 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
             }
         }
 
+        // Validate new date if provided
+        if (date) {
+            const newDate = new Date(date);
+            const now = new Date();
+            
+            // Ensure new date is not in the past
+            if (newDate < now) {
+                return res.status(400).json({
+                    message: "Cannot schedule appointment in the past"
+                });
+            }
+
+            // Ensure new date is not too far in the future
+            const maxFutureDate = new Date();
+            maxFutureDate.setDate(now.getDate() + 30); // Allow scheduling up to 30 days in advance
+            if (newDate > maxFutureDate) {
+                return res.status(400).json({
+                    message: "Cannot schedule appointment more than 30 days in advance"
+                });
+            }
+        }
+
+        // Get the updated appointment with patient details
         const updatedAppointment = await prisma.appointment.update({
             where: { id },
             data: {
                 ...(status && { status }),
                 ...(notes && { notes }),
-                ...(date && { date: new Date(date) })
+                ...(date && { date: date ? new Date(date) : undefined })
             },
             include: {
                 patient: {
-                    include: {
+                    select: {
+                        id: true,
                         user: {
                             select: {
+                                email: true,
                                 fullName: true
                             }
                         }
@@ -136,6 +162,55 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
             }
         });
+
+        // Send notification if rescheduling (status changed to PENDING)
+        // If date is provided, update the appointment and send reschedule notification
+        if (date) {
+            const newDate = new Date(date);
+            const updatedAppointment = await prisma.appointment.update({
+                where: { id },
+                data: {
+                    date: newDate,
+                    status: status || existingAppointment.status,
+                    notes: notes || existingAppointment.notes
+                },
+                include: {
+                    patient: {
+                        include: { user: true }
+                    },
+                    doctor: {
+                        include: { user: true }
+                    }
+                }
+            });
+
+            await sendAppointmentRescheduledNotification({
+                patientEmail: updatedAppointment.patient.user.email,
+                doctorName: doctor.user.fullName,
+                oldDate: existingAppointment.date,
+                newDate: newDate,
+                type: existingAppointment.type === 'ONLINE' ? 'VIDEO' : 'IN_PERSON',
+                patientId: updatedAppointment.patient.id,
+                appointmentId: updatedAppointment.id
+            });
+        } else {
+            // Only update status/notes if no date change
+            const updatedAppointment = await prisma.appointment.update({
+                where: { id },
+                data: {
+                    status: status || existingAppointment.status,
+                    notes: notes || existingAppointment.notes
+                },
+                include: {
+                    patient: {
+                        include: { user: true }
+                    },
+                    doctor: {
+                        include: { user: true }
+                    }
+                }
+            });
+        }
 
         return res.status(200).json(updatedAppointment);
     } catch (error) {

@@ -10,6 +10,7 @@ interface SidebarItem {
 
 interface DashboardSidebarProps {
   items: SidebarItem[];
+  className?: string;
 }
 
 const DashboardSidebar = ({ items }: DashboardSidebarProps) => {

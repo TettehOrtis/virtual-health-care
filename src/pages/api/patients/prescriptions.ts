@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Fetch patient's prescriptions
         const prescriptions = await prisma.prescription.findMany({
-            where: { patientId: user.userId },
+            where: { patientId: user.supabaseId },
             include: { doctor: { include: { user: true } } }, // Include doctor details
         });
 

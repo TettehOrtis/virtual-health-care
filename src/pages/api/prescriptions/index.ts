@@ -18,11 +18,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 if (user.role === "PATIENT") {
                     // Fetch prescriptions for the patient
                     prescriptions = await prisma.prescription.findMany({
-                        where: { patientId: user.userId },
+                        where: { patientId: user.supabaseId },
                         include: {
+                            patient: {
+                                include: {
+                                    user: true,
+                                },
+                            },
                             doctor: {
                                 include: {
-                                    user: true, // Include the associated User record for the doctor
+                                    user: true,
                                 },
                             },
                         },
@@ -30,11 +35,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 } else if (user.role === "DOCTOR") {
                     // Fetch prescriptions for the doctor
                     prescriptions = await prisma.prescription.findMany({
-                        where: { doctorId: user.userId },
+                        where: { doctorId: user.supabaseId },
                         include: {
                             patient: {
                                 include: {
-                                    user: true, // Include the associated User record for the patient
+                                    user: true,
+                                },
+                            },
+                            doctor: {
+                                include: {
+                                    user: true,
                                 },
                             },
                         },
@@ -46,8 +56,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 // Map the prescriptions to include patient and doctor names
                 const formattedPrescriptions = prescriptions.map((prescription) => ({
                     ...prescription,
-                    patientName: prescription.patient?.user?.fullName,
-                    doctorName: prescription.doctor?.user?.fullName,
+                    patientName: prescription.patient?.user?.fullName ?? null,
+                    doctorName: prescription.doctor?.user?.fullName ?? null,
                 }));
 
                 res.status(200).json(formattedPrescriptions);
@@ -81,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 console.log("Patient record from database:", patient);
 
                 // Fetch the doctor record using the authenticated user's userId
-                const doctor = await prisma.doctor.findUnique({ where: { userId: user.userId } });
+                const doctor = await prisma.doctor.findUnique({ where: { supabaseId: user.supabaseId } });
                 if (!doctor) {
                     return res.status(404).json({ message: "Doctor not found" });
                 }
@@ -150,7 +160,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return res.status(404).json({ message: "Prescription not found" });
                 }
 
-                if (prescription.doctorId !== user.userId) {
+                if (prescription.doctorId !== user.supabaseId) {
                     return res.status(403).json({ message: "Access Denied: You do not own this prescription" });
                 }
 

@@ -17,8 +17,8 @@ import { verifyToken } from "@/middleware/auth";
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     // Verify authentication token and extract userId
-    const { userId } = verifyToken(req);
-    if (!userId) {
+    const { supabaseId } = verifyToken(req);
+    if (!supabaseId) {
       return res.status(401).json({ error: "Unauthorized: Invalid token" });
     }
 
@@ -30,8 +30,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Find the user to determine their role (patient/doctor)
     const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true }
+      where: { id: supabaseId },
+      select: { role: true, supabaseId: true }
     });
 
     if (!user) {
@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check authorization: patients can only access their own data
     if (user.role === 'PATIENT') {
       const patient = await prisma.patient.findUnique({
-        where: { userId },
+        where: { supabaseId: user.supabaseId },
         select: { id: true }
       });
 
@@ -54,7 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // (via appointments or prescriptions)
     if (user.role === 'DOCTOR') {
       const doctor = await prisma.doctor.findUnique({
-        where: { userId }
+        where: { supabaseId: user.supabaseId }
       });
 
       if (!doctor) {

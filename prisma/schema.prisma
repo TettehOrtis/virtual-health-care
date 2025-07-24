@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,62 +8,57 @@ datasource db {
 }
 
 model User {
-  id         String   @id @default(uuid())
-  email      String   @unique
-  password   String
-  fullName   String
-  role       Role
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                     String   @id @default(uuid())
+  supabaseId             String   @unique
+  email                  String   @unique
+  fullName               String
+  role                   Role
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   // Relations
   patient    Patient?
   doctor     Doctor?
 
   // Indexes
+  @@index([supabaseId])
   @@index([email])
 }
 
 model Patient {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  dateOfBirth DateTime
-  gender      String
-  phone       String
-  address     String
-  medicalHistory String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  supabaseId      String   @unique
+  dateOfBirth     DateTime
+  gender          String
+  phone           String
+  address         String
+  medicalHistory  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  // Relation to User
-  user        User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [supabaseId], references: [supabaseId])
 
-  // Relations to Appointments and Prescriptions
-  appointments Appointment[]
-  prescriptions Prescription[]
+  appointments    Appointment[]
+  prescriptions   Prescription[]
 
-  // Indexes
-  @@index([userId])
+  @@index([supabaseId])
 }
 
 model Doctor {
-  id          String   @id @default(uuid())
-  userId      String   @unique
-  specialization String
-  phone       String
-  address     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String   @id @default(uuid())
+  supabaseId      String   @unique
+  specialization  String
+  phone           String
+  address         String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  // Relation to User
-  user        User     @relation(fields: [userId], references: [id])
+  user            User     @relation(fields: [supabaseId], references: [supabaseId])
 
-  // Relations to Appointments and Prescriptions
-  appointments Appointment[]
-  prescriptions Prescription[]
+  appointments    Appointment[]
+  prescriptions   Prescription[]
 
-  // Indexes
-  @@index([userId])
+  @@index([supabaseId])
 }
 
 model Appointment {
@@ -84,29 +73,25 @@ model Appointment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   patient     Patient @relation(fields: [patientId], references: [id])
   doctor      Doctor  @relation(fields: [doctorId], references: [id])
 
-  // Indexes
   @@index([patientId])
   @@index([doctorId])
 }
 
 model Prescription {
-  id          String   @id @default(uuid())
-  patientId   String
-  doctorId    String
-  medication  String
-  dosage      String
+  id           String   @id @default(uuid())
+  patientId    String
+  doctorId     String
+  medication   String
+  dosage       String
   instructions String
-  createdAt   DateTime @default(now())
+  createdAt    DateTime @default(now())
 
-  // Relations
-  patient     Patient @relation(fields: [patientId], references: [id])
-  doctor      Doctor  @relation(fields: [doctorId], references: [id])
+  patient      Patient @relation(fields: [patientId], references: [id])
+  doctor       Doctor  @relation(fields: [doctorId], references: [id])
 
-  // Indexes
   @@index([patientId])
   @@index([doctorId])
 }

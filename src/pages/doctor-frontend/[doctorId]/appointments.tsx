@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import {
-    LayoutDashboard, Calendar, FileText,
-    UserCircle, Users, Clock, Video, Search, Filter
-} from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Search, Download, FileText as FileIcon, Filter, ArrowLeft, Video, Users, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { format } from "date-fns";
+import { formatDistance } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
+import RescheduleAppointment from "@/components/appointment/reschedule";
 
 interface Appointment {
     id: string;
@@ -18,6 +20,8 @@ interface Appointment {
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELED';
     type?: 'VIDEO' | 'IN_PERSON';
     notes?: string;
+    patientId: string;
+    doctorId: string;
     patient: {
         id: string;
         user: {
@@ -197,9 +201,51 @@ const DoctorAppointments = () => {
         toast.info(`Starting session for appointment ${appointmentId}`);
     };
 
-    const handleReschedule = async (appointmentId: string) => {
-        // Would open a modal to reschedule
-        toast.info(`Rescheduling appointment ${appointmentId}`);
+    const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
+
+    const handleReschedule = async (appointment: any) => {
+        setSelectedAppointment(appointment);
+        setIsRescheduleModalOpen(true);
+    };
+
+    const handleRescheduleConfirm = async (newDate: string, type: "VIDEO" | "IN_PERSON") => {
+        try {
+            const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+            const response = await fetch("/api/doctors/appointments", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    id: selectedAppointment?.id,
+                    date: newDate,
+                    type,
+                    status: "PENDING"  // Reset to pending for rescheduling
+                }),
+            });
+
+            if (response.ok) {
+                toast.success("Appointment rescheduled successfully.");
+                // Update local state
+                setAppointments(prevAppointments =>
+                    prevAppointments.map(apt =>
+                        apt.id === selectedAppointment?.id ? { 
+                            ...apt, 
+                            date: newDate,
+                            type,
+                            status: "PENDING" as any 
+                        } : apt
+                    )
+                );
+                setIsRescheduleModalOpen(false);
+            } else {
+                toast.error("Failed to reschedule appointment.");
+            }
+        } catch (error) {
+            toast.error("An error occurred while rescheduling appointment.");
+        }
     };
 
     const handleUpdateStatus = async (appointmentId: string, status: string) => {
@@ -289,7 +335,7 @@ const DoctorAppointments = () => {
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
                                     placeholder="Search patient name"
-                                    className="pl-9"
+                                    className="pl-9 text-gray-900 placeholder-gray-500"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                 />
@@ -299,25 +345,25 @@ const DoctorAppointments = () => {
                                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                                     <SelectTrigger className="w-[180px]">
                                         <Filter className="h-4 w-4 mr-2" />
-                                        <SelectValue placeholder="Status" />
+                                        <SelectValue placeholder="Status" className="text-gray-900" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Statuses</SelectItem>
-                                        <SelectItem value="upcoming">Upcoming</SelectItem>
-                                        <SelectItem value="completed">Completed</SelectItem>
-                                        <SelectItem value="canceled">Canceled</SelectItem>
+                                        <SelectItem value="all" className="text-gray-900">All Statuses</SelectItem>
+                                        <SelectItem value="upcoming" className="text-gray-900">Upcoming</SelectItem>
+                                        <SelectItem value="completed" className="text-gray-900">Completed</SelectItem>
+                                        <SelectItem value="canceled" className="text-gray-900">Canceled</SelectItem>
                                     </SelectContent>
                                 </Select>
 
                                 <Select value={filterType} onValueChange={setFilterType}>
                                     <SelectTrigger className="w-[180px]">
                                         <Filter className="h-4 w-4 mr-2" />
-                                        <SelectValue placeholder="Type" />
+                                        <SelectValue placeholder="Type" className="text-gray-900" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="all">All Types</SelectItem>
-                                        <SelectItem value="video">Video</SelectItem>
-                                        <SelectItem value="in-person">In-person</SelectItem>
+                                        <SelectItem value="all" className="text-gray-900">All Types</SelectItem>
+                                        <SelectItem value="video" className="text-gray-900">Video</SelectItem>
+                                        <SelectItem value="in-person" className="text-gray-900">In-person</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -432,14 +478,7 @@ const DoctorAppointments = () => {
                                                                         className="text-gray-700 hover:text-gray-900"
                                                                         onClick={() => handleReschedule(appointment.id)}
                                                                     >
-                                                                        Reschedule
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline"
-                                                                        className="text-red-600 hover:text-red-700"
-                                                                        onClick={() => handleUpdateStatus(appointment.id, 'CANCELED')}
-                                                                    >
-                                                                        Cancel
+                                                                        Reset for Rescheduling
                                                                     </Button>
                                                                 </div>
                                                             )}
@@ -509,20 +548,42 @@ const DoctorAppointments = () => {
                                                         </div>
 
                                                         <div className="flex gap-2">
-                                                            <Button
-                                                                variant="outline"
-                                                                className="text-gray-700 hover:text-gray-900"
-                                                                onClick={() => handleReschedule(appointment.id)}
-                                                            >
-                                                                Reschedule
-                                                            </Button>
-                                                            <Button
-                                                                variant="outline"
-                                                                className="text-red-600 hover:text-red-700"
-                                                                onClick={() => handleUpdateStatus(appointment.id, 'CANCELED')}
-                                                            >
-                                                                Cancel
-                                                            </Button>
+                                                            {appointment.status === 'PENDING' && (
+                                                                <>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                                                                        onClick={() => handleUpdateStatus(appointment.id, 'APPROVED')}
+                                                                    >
+                                                                        Accept
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="bg-red-50 text-red-700 hover:bg-red-100 border-red-200"
+                                                                        onClick={() => handleUpdateStatus(appointment.id, 'REJECTED')}
+                                                                    >
+                                                                        Decline
+                                                                    </Button>
+                                                                </>
+                                                            )}
+                                                            {appointment.status === 'APPROVED' && (
+                                                                <>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
+                                                                        onClick={() => handleUpdateStatus(appointment.id, 'COMPLETED')}
+                                                                    >
+                                                                        Complete
+                                                                    </Button>
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        className="text-gray-700 hover:text-gray-900"
+                                                                        onClick={() => handleReschedule(appointment)}
+                                                                    >
+                                                                        Reschedule
+                                                                    </Button>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </div>
@@ -619,6 +680,14 @@ const DoctorAppointments = () => {
                     </div>
                 </div>
             </div>
+                    {/* Reschedule Modal */}
+                    <RescheduleAppointment
+                        isOpen={isRescheduleModalOpen}
+                        onClose={() => setIsRescheduleModalOpen(false)}
+                        appointment={selectedAppointment}
+                        onReschedule={handleRescheduleConfirm}
+                    />
+
         </MainLayout>
     );
 };

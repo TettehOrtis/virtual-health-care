@@ -43,7 +43,8 @@ const AuthForm = () => {
     if (isLogin) {
       // Handle login
       try {
-        const response = await fetch("/api/auth/login", {
+        const endpoint = isLogin ? "/api/auth/login" : "/api/auth/supabase";
+        const response = await fetch(endpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -51,6 +52,13 @@ const AuthForm = () => {
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
+            fullName: formData.fullName,
+            role: formData.role,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+            phone: formData.phone,
+            address: formData.address,
+            specialization: formData.specialization
           }),
         });
 

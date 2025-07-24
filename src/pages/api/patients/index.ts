@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         const patient = await prisma.patient.findUnique({
-            where: { userId: user.userId },
+            where: { supabaseId: user.supabaseId },
             include: { user: true, appointments: true, prescriptions: true },
         });
 

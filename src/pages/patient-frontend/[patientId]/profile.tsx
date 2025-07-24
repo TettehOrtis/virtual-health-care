@@ -13,7 +13,7 @@ import { toast } from "sonner";
 
 interface PatientProfile {
     id: string;
-    userId: string;
+    supabaseId: string;
     dateOfBirth: string;
     gender: string;
     phone: string;

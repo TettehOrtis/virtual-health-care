@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useSocket } from "@/lib/socket/socket";
 
 interface Prescription {
     id: string;
@@ -30,6 +31,20 @@ const PatientPrescriptions = () => {
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
+    const socket = useSocket(`/api/socket?token=${localStorage.getItem('token') || sessionStorage.getItem('token')}`);
+
+    useEffect(() => {
+        if (socket && patientId) {
+            socket.on('new_prescription', (event: MessageEvent<string>) => {
+                const message = JSON.parse(event.data) as { data: Prescription };
+                // Update prescriptions with new prescription
+                setPrescriptions(prev => [
+                    ...prev,
+                    message.data
+                ]);
+            });
+        }
+    }, [socket, patientId]);
 
     // Define sidebar items with the patientId in the paths
     const sidebarItems = [

@@ -71,7 +71,7 @@ const DoctorCard = ({
           </div>
         </div>
         
-        <div className="border-t p-4 bg-gray-50">
+        <div className="border-t p-4 bg-gray-50 hover:bg-gray-100">
           <Button 
             onClick={handleBookAppointment} 
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"

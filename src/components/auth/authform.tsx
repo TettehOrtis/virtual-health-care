@@ -13,6 +13,7 @@ const AuthForm = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [userRole, setUserRole] = useState<UserRole>("PATIENT");
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
 
   // Form state for registration
   const [formData, setFormData] = useState({
@@ -39,6 +40,7 @@ const AuthForm = () => {
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (isLogin) {
       // Handle login
@@ -66,6 +68,7 @@ const AuthForm = () => {
         console.log("Login response data:", data); // Add for debugging
 
         if (response.ok) {
+          setIsLoading(false);
           // Store token in both localStorage and memory
           localStorage.setItem('token', data.token);
           window.sessionStorage.setItem('token', data.token);
@@ -98,10 +101,11 @@ const AuthForm = () => {
             router.push(data.redirectUrl);
           } else {
             console.error("Could not determine user role or find redirect information", data);
-            toast.error("Login successful but couldn't determine user type");
+            toast.error("Login successful but couldn't load your dashboard");
           }
         } else {
-          toast.error(data.message || data.error || "Login failed. Please try again.");
+          setIsLoading(false);
+          toast.error(data.message || "Login failed");
         }
       } catch (error) {
         console.error("Login error:", error);
@@ -124,6 +128,7 @@ const AuthForm = () => {
           toast.success("Registration successful!");
           setIsLogin(true); // Switch back to login form
         } else {
+          setIsLoading(false);
           toast.error(data.error || "Registration failed. Please try again.");
         }
       } catch (error) {
@@ -319,9 +324,10 @@ const AuthForm = () => {
 
           <Button
             type="submit"
+            disabled={isLoading}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           >
-            {isLogin ? "Sign In" : "Sign Up"}
+            {isLoading ? (isLogin ? "Logging in..." : "Registering...") : (isLogin ? "Login" : "Register")}
           </Button>
         </form>
       </CardContent>

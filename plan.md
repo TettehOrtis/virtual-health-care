@@ -12,62 +12,115 @@
 - Radix UI for accessible components
 
 ### Backend
-- PostgreSQL database
-- Prisma ORM
+- PostgreSQL database with Prisma ORM
 - Next.js API routes
 - JWT for authentication
 - Axios for HTTP requests
+- Brevo (Sendinblue) for email service
+
+### Email Service
+- Brevo (Sendinblue) API v3 SDK
+- Email templates stored in `/src/lib/email/templates/`
+- Supports HTML templates with variable interpolation
+- Implements retry mechanism (3 attempts)
+- Handles rate limiting and API errors gracefully
+- Default sender: tettehortis005@gmail.com
+- Response time ~700-1200ms for email sends
 
 ### Project Structure
 ```
 src/
-├── components/      # Reusable UI components
-├── lib/            # Utility functions and configurations
-├── middleware/     # API middleware
-├── pages/          # Next.js pages
-│   ├── api/        # API routes
-│   ├── auth.tsx    # Authentication pages
-│   ├── doctor-dashboard/  # Doctor dashboard
-│   ├── doctor-frontend/   # Doctor interface
-│   ├── patient-dashboard/ # Patient dashboard
-│   └── patient-frontend/  # Patient interface
-└── styles/         # Global styles
+├── components/
+│   ├── dashboard/      # Dashboard components
+│   ├── appointment/    # Appointment management
+│   ├── doctor/        # Doctor profile components
+│   └── patient/       # Patient profile components
+├── lib/
+│   ├── email/         # Email service implementation
+│   ├── notifications/ # Notification system
+│   └── utils/         # Utility functions
+├── middleware/
+├── pages/
+│   ├── api/
+│   │   ├── admin.ts
+│   │   ├── auth/
+│   │   ├── appointments/
+│   │   ├── doctors/
+│   │   ├── patients/
+│   │   ├── prescriptions/
+│   │   ├── test-brevo.ts
+│   │   └── test-email.ts
+│   ├── auth/
+│   ├── doctor-dashboard/
+│   ├── doctor-frontend/
+│   ├── patient-dashboard/
+│   └── patient-frontend/
+└── styles/
 ```
 
 ## Implemented Features
 
 ### Authentication System
-- [x] User registration
-- [x] Login/logout
+- [x] User registration with Supabase
+- [x] Login/logout functionality
 - [x] Role-based access control
-- [x] Profile management
+- [x] Profile management with Prisma
+- [x] Email verification through Brevo
 
-### Core Features
-- [x] Doctor search and filtering
-- [x] Appointment booking system
+### Appointment Management
+- [x] Doctor availability calendar
+- [x] Appointment booking
+- [x] Appointment rescheduling with email notifications
+- [x] Appointment cancellation
+- [x] 24-hour appointment reminders
+- [x] Appointment confirmation emails
+- [x] Appointment reschedule notifications
+
+### Prescription System
+- [x] Digital prescription management
+- [x] Prescription issuance
+- [x] Prescription history
+- [x] Prescription validation
+
+### Medical Records
+- [x] Personal medical history
+- [x] Consultation history
+- [x] Medical record encryption
+- [x] Record access control
+
+### Video Consultation
 - [x] Video consultation integration
-- [x] Prescription management
-- [x] Medical record management
+- [x] Secure messaging system
+- [x] Consultation notes
+- [x] Recording capability
+
+### Email Notifications
+- [x] Appointment booking confirmation
+- [x] Appointment rescheduling
+- [x] Appointment cancellation
+- [x] Appointment reminders
+- [x] Prescription notifications
+- [x] System notifications
 
 ## Next Steps
 
 ### Phase 1: Core Feature Enhancement
-- [ ] Implement advanced search filters
-- [ ] Add appointment reminders
-- [ ] Implement medical record encryption
-- [ ] Add prescription validation
+- [ ] Advanced search filters
+- [ ] Medical record encryption improvements
+- [ ] Prescription validation enhancements
+- [ ] Appointment reminder customization
 
 ### Phase 2: Video Consultation
-- [ ] Implement waiting room
-- [ ] Add recording capability
-- [ ] Implement screen sharing
-- [ ] Add recording storage
+- [ ] Waiting room implementation
+- [ ] Screen sharing capability
+- [ ] Recording storage optimization
+- [ ] Waiting room UI
 
 ### Phase 3: Advanced Features
-- [ ] Implement AI-powered symptom checker
-- [ ] Add analytics dashboard
-- [ ] Implement mobile app integration
-- [ ] Add telemedicine features
+- [ ] AI-powered symptom checker
+- [ ] Analytics dashboard
+- [ ] Mobile app integration
+- [ ] Telemedicine features
 
 ### Phase 4: Optimization
 - [ ] Performance optimization
@@ -79,22 +132,23 @@ src/
 
 ### Critical Dependencies
 - PostgreSQL database setup
-- Video consultation provider integration
-- Payment gateway integration
+- Brevo (Sendinblue) integration
+- Video consultation provider
 - SSL certificate
 
 ### Potential Blockers
 - Video consultation API integration
 - Medical data privacy compliance
-- Payment gateway integration
 - Performance scaling
+- Email delivery reliability
 
 ## Implementation Roadmap
 
 ### Q1 2025
-- [ ] Complete core features
-- [ ] Implement video consultation
-- [ ] Add basic analytics
+- [x] Core features complete
+- [x] Email service implementation
+- [x] Appointment management
+- [x] Prescription system
 
 ### Q2 2025
 - [ ] Advanced features
@@ -102,7 +156,7 @@ src/
 - [ ] AI symptom checker
 
 ### Q3 2025
-- [ ] Optimization
+- [ ] Optimization phase
 - [ ] Security enhancements
 - [ ] Performance improvements
 
@@ -114,17 +168,23 @@ src/
 ## Progress Tracking
 
 ### Core Features
-- ✅ Authentication
-- ✅ Appointment booking
-- ✅ Prescription management
-- ✅ Basic video consultation
+- Complete authentication system
+- Appointment management with email notifications
+- Prescription management
+- Video consultation integration
+- Medical record management
+- Email service implementation
+- Appointment rescheduling
+- Brevo email integration
 
 ### Advanced Features
-- 🔲 AI symptom checker
-- 🔲 Mobile integration
-- 🔲 Analytics dashboard
+- AI symptom checker
+- Mobile integration
+- Analytics dashboard
 
 ### Technical Debt
-- 🔲 Database optimization
-- 🔲 Code refactoring
-- 🔲 Security enhancements
+- Database optimization
+- Code refactoring
+- Security enhancements
+- Supabase connection configuration
+- Performance optimization

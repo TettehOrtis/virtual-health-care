@@ -1,28 +1,90 @@
-import jwt from 'jsonwebtoken';
+import { supabase } from './supabase';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
+interface UserSession {
+  user: {
+    id: string;
+    email: string;
+    user_metadata: {
+      role?: string;
+      fullName?: string;
+    };
+  };
+  expires_at: number;
+}
 
-export const generateToken = (payload: any) => {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: '24h'
-  });
-};
+interface SessionResponse {
+  session: {
+    user: {
+      id: string;
+      email: string;
+      user_metadata?: {
+        role?: string;
+        fullName?: string;
+      };
+    };
+    expires_at?: number;
+  };
+}
 
-export const verifyToken = (token: string) => {
+export const getSession = async (): Promise<UserSession | null> => {
   try {
-    return jwt.verify(token, JWT_SECRET) as any;
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
+      console.error('Auth session error:', error);
+      return null;
+    }
+
+    if (!session) {
+      return null;
+    }
+
+    return {
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        user_metadata: session.user.user_metadata || {}
+      },
+      expires_at: session.expires_at || 0
+    };
   } catch (error) {
-    throw new Error('Invalid or expired token');
+    console.error('Session retrieval error:', error);
+    return null;
   }
 };
 
-export const generateSupabaseToken = async (supabaseId: string) => {
-  // This is a placeholder for when we need to generate Supabase-specific tokens
-  // In practice, you would use Supabase's service role key to generate tokens
-  return {
-    token: generateToken({
-      sub: supabaseId,
-      role: 'authenticated'
-    })
-  };
+export const refreshSession = async (): Promise<boolean> => {
+  try {
+    const { data: { session }, error } = await supabase.auth.refreshSession();
+    
+    if (error) {
+      console.error('Session refresh error:', error);
+      return false;
+    }
+
+    if (!session) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Session refresh error:', error);
+    return false;
+  }
+};
+
+export const signOut = async (): Promise<boolean> => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    
+    if (error) {
+      console.error('Sign out error:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return false;
+  }
 };

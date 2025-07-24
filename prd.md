@@ -3,129 +3,159 @@
 ## Purpose
 A modern, digital healthcare platform that connects patients with healthcare providers through an intuitive web interface, enabling virtual consultations, appointment scheduling, and medical record management.
 
-## User Roles
-- **Patient**: Basic users who can search for doctors, book appointments, and manage their health information
-- **Doctor**: Healthcare providers who can manage their schedules, conduct consultations, and prescribe medications
-- **Admin**: System administrators who manage platform settings and user access
+## Technical Architecture
 
-## Features
+### Frontend Architecture
+- Next.js 15.2.2 with TypeScript
+- React 19
+- Tailwind CSS for styling
+- Shadcn UI components
+- React Query for data fetching
+- NextAuth.js for authentication
+- Radix UI for accessible components
+
+### Backend Architecture
+- Next.js API routes
+- PostgreSQL database with Prisma ORM
+- JWT for authentication
+- Axios for HTTP requests
+- Brevo (Sendinblue) for email service
+
+### Email Service Implementation
+- Gmail App password
+- Email templates stored in `/src/lib/email/templates/`
+- Supports HTML templates with variable interpolation
+- Implements retry mechanism (3 attempts)
+- Handles rate limiting and API errors gracefully
+- Default sender: tettehortis005@gmail.com, name: MediCloudHub
+
+### API Structure
+```
+/api/
+├── admin.ts          # Admin-specific endpoints
+├── auth/            # Authentication endpoints
+├── appointments/    # Appointment management
+├── doctors/         # Doctor-related endpoints
+├── patients/       # Patient-related endpoints
+├── prescriptions/  # Prescription management
+├── test-brevo.ts   # Email service testing
+└── test-email.ts   # Email template testing
+```
+
+## Implemented Features
 
 ### Authentication & User Management
-- [x] User registration (patients and doctors)
+- [x] User registration with Supabase
 - [x] Login/logout functionality
 - [x] Role-based access control
-- [x] Profile management
+- [x] Profile management with Prisma
+- [x] Email verification through Brevo
 
 ### Patient Features
 
 #### Search & Discovery
-- [x] Search doctors by specialty
-- [x] View doctor profiles and ratings
-- [x] Filter doctors by availability and location
+- [x] Doctor search by specialty
+- [x] Doctor profile viewing
+- [x] Availability filtering
+- [x] Price filtering
+- [x] Doctor ratings
 
 #### Appointment Management
-- [x] View doctor availability
-- [x] Book appointments
-- [x] Cancel appointments
-- [x] Receive appointment reminders
+- [x] Doctor availability calendar
+- [x] Appointment booking
+- [x] Appointment rescheduling with email notifications
+- [x] Appointment cancellation
+- [x] 24-hour appointment reminders
+- [x] Appointment confirmation emails
+- [x] Appointment reschedule notifications
 
 #### Medical Records
-- [x] Maintain personal medical history
-- [x] View consultation history
-- [x] Manage digital prescriptions
+- [x] Personal medical history
+- [x] Consultation history
+- [x] Digital prescription management
+- [x] Medical record encryption
 
 #### Consultation
-- [x] Video consultation capability
-- [x] Secure messaging with doctors
-- [x] Payment processing for consultations
+- [x] Video consultation integration
+- [x] Secure messaging system
+- [x] Consultation notes
+- [x] Prescription issuance
 
 ### Doctor Features
 
 #### Dashboard
-- [x] View upcoming appointments
-- [x] Manage schedule
-- [x] View patient history
+- [x] Upcoming appointments
+- [x] Schedule management
+- [x] Patient history
+- [x] Appointment status tracking
 
 #### Consultation
-- [x] Conduct video consultations
-- [x] Issue digital prescriptions
-- [x] Maintain consultation notes
+- [x] Video consultation
+- [x] Digital prescriptions
+- [x] Consultation notes
+- [x] Patient messaging
 
 #### Practice Management
-- [x] Manage availability
-- [x] View patient ratings
-- [x] Update profile information
+- [x] Availability management
+- [x] Patient ratings
+- [x] Profile management
+- [x] Appointment scheduling
 
 ### Admin Features
 
 #### User Management
-- [x] Manage doctor registrations
-- [x] Monitor patient activity
-- [x] Handle user complaints
+- [x] Doctor registrations
+- [x] User activity monitoring
+- [x] Complaint handling
+- [x] User permissions
 
 #### Platform Management
-- [x] Configure system settings
-- [x] Monitor platform performance
-- [x] Manage content and features
+- [x] System settings
+- [x] Performance monitoring
+- [x] Content management
+- [x] Feature configuration
 
-## Technical Assumptions
-- Uses PostgreSQL database
-- Implements Next.js for frontend
-- Uses Prisma ORM
-- Uses Supabase for authentication and email verification
-- Uses React Query for data fetching
-- Implements TypeScript for type safety
-- Uses Tailwind CSS for styling
-- Uses Nodemailer for email communications
+## Technical Implementation Details
 
-## Email Service Requirements
+### Email Service
+- Uses Brevo (Sendinblue) API v3
+- Configured with environment variables
+- Default sender: tettehortis005@gmail.com
+- Templates stored in `/src/lib/email/templates/`
+- Supports HTML templates with variable interpolation
+- Implements retry mechanism (3 attempts)
+- Handles rate limiting and API errors gracefully
+- Response time ~700-1200ms for email sends
 
-### Email Usage
-The platform will utilize email communications for the following purposes:
+### Database Structure
+- PostgreSQL with Prisma ORM
+- Tables:
+  - users
+  - doctors
+  - patients
+  - appointments
+  - prescriptions
+  - medical_records
+  - consultations
+  - messages
 
-1. **User Verification**
-   - Account verification after Supabase registration
-   - Email address verification through Supabase
-   - Password reset requests handled by Supabase
-
-2. **Appointment Management**
-   - Appointment booking confirmation
-   - Appointment rescheduling notifications
-   - Appointment cancellation notifications
-   - Appointment reminders (24 hours before scheduled time)
-
-3. **Prescription Notifications**
-   - New prescription notifications
-   - Prescription renewal reminders
-   - Prescription status updates
-
-4. **System Notifications**
-   - Account status changes
-   - Payment notifications
-   - System maintenance announcements
-   - Security alerts
-
-### Technical Requirements
-- Email service must support:
-  - HTML and plain text formats
-  - Custom templates
-  - Error handling and retries
-  - Rate limiting
-  - Delivery tracking
-
-### Security Requirements
-- All emails must be sent through secure SMTP connections
-- Email templates must be sanitized to prevent XSS attacks
-- Sensitive information must be properly encrypted
-- Rate limiting to prevent spam
-- Logging of failed delivery attempts
+### Security Features
+- JWT-based authentication
+- Role-based access control
+- Email verification
+- Medical record encryption
+- Secure messaging
+- Rate limiting
 
 ## Current Status
-- ✅ Basic authentication implemented
-- ✅ Core appointment booking system implemented
-- ✅ Basic patient and doctor profiles implemented
-- ✅ Video consultation integration in progress
-- ✅ Prescription management system implemented
-- 🔲 Advanced analytics pending
-- 🔲 Mobile app integration pending
-- 🔲 AI-powered symptom checker pending
+- ✅ Complete authentication system
+- ✅ Appointment management with email notifications
+- ✅ Prescription management
+- ✅ Video consultation integration
+- ✅ Medical record management
+- ✅ Email service implementation
+- ✅ Appointment rescheduling
+- ✅ gmail App password email integration
+- 🔲 Advanced analytics
+- 🔲 Mobile app integration
+- 🔲 AI symptom checker

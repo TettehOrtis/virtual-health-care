@@ -1,4 +1,7 @@
-import { useState } from "react";
+
+'use client'
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -10,19 +13,109 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Menu, X, User, LogOut, Settings } from "lucide-react";
+import { Menu, X, LogOut, Settings } from "lucide-react";
+import { supabase } from "@/lib/supabase";
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<{
+    id: string;
+    email: string;
+    fullName: string;
+    role: string;
+    supabaseId: string;
+    doctorId?: string;
+    patientId?: string;
+  } | null>(null);
   const router = useRouter();
 
-  // Mock auth state
-  const isLoggedIn = router.pathname.includes("dashboard");
-  const userRole = router.pathname.includes("patient") ? "patient" : "doctor";
+  useEffect(() => {
+    // Check auth state on mount
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        try {
+          const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+          if (error) throw error;
 
-  const handleLogout = () => {
+          if (currentSession?.user) {
+            const supabaseUser = currentSession.user;
+            const fullName = supabaseUser.user_metadata?.fullName || 
+                           (supabaseUser.email ? supabaseUser.email.split('@')[0] : "User");
+            
+            // Fetch complete user profile from Prisma
+            const { data: { user: dbUser } } = await supabase
+              .from('users')
+              .select('*, doctor(id), patient(id)')
+              .eq('supabase_id', supabaseUser.id)
+              .single();
+
+            if (!dbUser) {
+              console.error('User not found in Prisma database');
+              return;
+            }
+
+            setUser({
+              id: dbUser.id,
+              supabaseId: supabaseUser.id,
+              email: supabaseUser.email || '',
+              role: dbUser.role || supabaseUser.user_metadata?.role || "authenticated",
+              fullName,
+              doctorId: dbUser.doctor?.id,
+              patientId: dbUser.patient?.id
+            });
+            setIsLoggedIn(true);
+          }
+        } catch (error) {
+          console.error('Auth state change error:', error);
+          setIsLoggedIn(false);
+          setUser(null);
+        }
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
+    });
+
+    // Initial auth state check
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error || !session?.user) {
+        setIsLoggedIn(false);
+        setUser(null);
+        return;
+      }
+
+      const user = session.user;
+      const fullName = user.user_metadata?.fullName || 
+                     (user.email ? user.email.split('@')[0] : "User");
+      
+      setUser({
+        id: user.id,
+        supabaseId: user.id,
+        email: user.email || "",
+        role: user.user_metadata?.role || "authenticated",
+        fullName: fullName || "User",
+      });
+      setIsLoggedIn(true);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    localStorage.removeItem("token");
+    setIsLoggedIn(false);
+    setUser(null);
     router.push("/");
   };
+
+  const userInitials = user?.fullName
+    ?.split(" ")
+    .map((n) => n[0].toUpperCase())
+    .join("") || "U";
 
   return (
     <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
@@ -39,72 +132,46 @@ const Navbar = () => {
             </Link>
           </div>
 
-          {/* Desktop nav links */}
           <div className="hidden md:flex md:items-center md:gap-6">
-            <Link href="/" className="text-gray-700 hover:text-blue-600">
-              Home
-            </Link>
-            <Link href="/find-doctor" className="text-gray-700 hover:text-blue-600">
-              Find Doctors
-            </Link>
-            <Link href="/services" className="text-gray-700 hover:text-blue-600">
-              Services
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-blue-600">
-              About
-            </Link>
-            <Link href="/contact" className="text-gray-700 hover:text-blue-600">
-              Contact
-            </Link>
+            <Link href="/" className="text-gray-700 hover:text-blue-600">Home</Link>
+            <Link href="/find-doctor" className="text-gray-700 hover:text-blue-600">Find Doctors</Link>
+            <Link href="/services" className="text-gray-700 hover:text-blue-600">Services</Link>
+            <Link href="/about" className="text-gray-700 hover:text-blue-600">About</Link>
+            <Link href="/contact" className="text-gray-700 hover:text-blue-600">Contact</Link>
           </div>
 
           <div className="flex items-center gap-4">
             {isLoggedIn ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative rounded-full">
-                    <Avatar>
+                  <Button variant="ghost" className="relative rounded-full h-10 w-10 p-0">
+                    <Avatar className="h-10 w-10">
                       <AvatarImage src="" />
                       <AvatarFallback className="bg-blue-600 text-white">
-                        {userRole === "patient" ? "P" : "D"}
+                        {userInitials}
                       </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-4 py-3">
-                    <p className="text-sm font-medium">Demo {userRole === "patient" ? "Patient" : "Doctor"}</p>
-                    <p className="text-xs text-gray-500">demo@medicloudhub.com</p>
-                  </div>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem asChild>
-                    <Link href={`/${userRole}-dashboard`} className="flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </Link>
+                    <Link href="/dashboard">Dashboard</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href={`/${userRole}-profile`} className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
+                    <Link href="/profile">My Profile</Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="flex items-center gap-2 text-red-500">
-                    <LogOut className="h-4 w-4" />
-                    <span>Logout</span>
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600">
+                    <LogOut className="mr-2 h-4 w-4" /> Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <div className="flex items-center">
-                <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
-                  <Link href="/auth">Sign in</Link>
-                </Button>
-              </div>
+              <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white">
+                <Link href="/auth">Sign in</Link>
+              </Button>
             )}
 
-            {/* Mobile menu button */}
             <div className="flex md:hidden">
               <Button
                 variant="ghost"
@@ -123,45 +190,14 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile menu */}
         {mobileMenuOpen && (
           <div className="md:hidden">
             <div className="flex flex-col gap-4 mt-6 pb-4">
-              <Link
-                href="/"
-                className="text-base font-medium text-gray-900 hover:text-blue-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Home
-              </Link>
-              <Link
-                href="/find-doctor"
-                className="text-base font-medium text-gray-900 hover:text-blue-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Find Doctors
-              </Link>
-              <Link
-                href="/services"
-                className="text-base font-medium text-gray-900 hover:text-blue-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Services
-              </Link>
-              <Link
-                href="/about"
-                className="text-base font-medium text-gray-900 hover:text-blue-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className="text-base font-medium text-gray-900 hover:text-blue-600"
-                onClick={() => setMobileMenuOpen(false)}
-              >
-                Contact
-              </Link>
+              <Link href="/" className="text-base font-medium text-gray-900 hover:text-blue-600" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+              <Link href="/find-doctor" className="text-base font-medium text-gray-900 hover:text-blue-600" onClick={() => setMobileMenuOpen(false)}>Find Doctors</Link>
+              <Link href="/services" className="text-base font-medium text-gray-900 hover:text-blue-600" onClick={() => setMobileMenuOpen(false)}>Services</Link>
+              <Link href="/about" className="text-base font-medium text-gray-900 hover:text-blue-600" onClick={() => setMobileMenuOpen(false)}>About</Link>
+              <Link href="/contact" className="text-base font-medium text-gray-900 hover:text-blue-600" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
             </div>
           </div>
         )}

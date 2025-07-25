@@ -139,12 +139,11 @@ const PatientAppointments = () => {
     const handleCancelAppointment = async (appointmentId: string) => {
         try {
             const token = localStorage.getItem("token") || sessionStorage.getItem("token");
-            const response = await fetch("/api/patients/appointments", {
+            const response = await fetch(`/api/patients/appointments?id=${appointmentId}`, {
                 method: "DELETE",
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({ id: appointmentId }),
             });
 
             if (response.ok) {
@@ -199,14 +198,25 @@ const PatientAppointments = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white p-6 rounded-lg shadow-sm">
                             <h1 className="text-2xl font-bold text-gray-900">My Appointments</h1>
 
-                            <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                                <Input
-                                    placeholder="Search appointments..."
-                                    className="pl-10 w-full md:w-64 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
+                            <div className="flex items-center gap-4">
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                    <Input
+                                        placeholder="Search appointments..."
+                                        className="pl-10 w-full md:w-64 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                    />
+                                </div>
+                                <Button
+                                    asChild
+                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                >
+                                    <Link href={`/patient-frontend/${patientId}/book-appointment`}>
+                                        <Calendar className="h-4 w-4 mr-2" />
+                                        Book Appointment
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
 

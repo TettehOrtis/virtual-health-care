@@ -19,7 +19,7 @@
 - Brevo (Sendinblue) for email service
 
 ### Email Service
-- Brevo (Sendinblue) API v3 SDK
+- Gmail App password API 
 - Email templates stored in `/src/lib/email/templates/`
 - Supports HTML templates with variable interpolation
 - Implements retry mechanism (3 attempts)
@@ -27,7 +27,34 @@
 - Default sender: tettehortis005@gmail.com
 - Response time ~700-1200ms for email sends
 
-### Project Structure
+### Project Plan
+
+## Workflow Requirements
+
+### Code Analysis Process
+Before generating any code or making changes, the following process must be followed:
+
+1. **Full File Analysis**
+   - Always analyze the entire file where the error or issue is reported
+   - Understand the complete context and flow of the code
+   - Identify all related components and dependencies
+
+2. **Related Files Analysis**
+   - Check related files that interact with the current file
+   - Look for shared state, API endpoints, and component relationships
+   - Understand the full system context
+
+3. **State Management Analysis**
+   - Track all state variables and their relationships
+   - Understand state transitions and side effects
+   - Identify potential race conditions or timing issues
+
+4. **Error Context Analysis**
+   - Identify the exact conditions that trigger the error
+   - Check error boundaries and recovery mechanisms
+   - Understand the expected vs actual behavior
+
+## Project Structure
 ```
 src/
 ├── components/
@@ -132,7 +159,7 @@ src/
 
 ### Critical Dependencies
 - PostgreSQL database setup
-- Brevo (Sendinblue) integration
+- Gmail App password API 
 - Video consultation provider
 - SSL certificate
 

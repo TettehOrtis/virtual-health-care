@@ -118,7 +118,7 @@ A modern, digital healthcare platform that connects patients with healthcare pro
 ## Technical Implementation Details
 
 ### Email Service
-- Uses Brevo (Sendinblue) API v3
+- Uses Gmail App password API 
 - Configured with environment variables
 - Default sender: tettehortis005@gmail.com
 - Templates stored in `/src/lib/email/templates/`

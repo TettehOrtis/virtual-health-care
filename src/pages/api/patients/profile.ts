@@ -26,6 +26,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(200).json(patient);
         }
 
+        if (req.method === "PUT") {
+            // Parse request body
+            const { phone, address, medicalHistory } = req.body;
+
+            // Update patient profile
+            const updatedPatient = await prisma.patient.update({
+                where: { supabaseId: user.supabaseId },
+                data: {
+                    phone: phone || undefined,
+                    address: address || undefined,
+                    medicalHistory: medicalHistory || undefined,
+                },
+            });
+
+            return res.status(200).json({ message: "Profile updated successfully", updatedPatient });
+        }
+
         if (req.method === "PATCH") {
             const { phone, address, medicalHistory, gender } = req.body;
 

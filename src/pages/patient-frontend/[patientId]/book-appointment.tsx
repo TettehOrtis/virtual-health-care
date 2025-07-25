@@ -258,6 +258,25 @@ const BookAppointment = () => {
                                                 </SelectContent>
                                             </Select>
                                         </div>
+
+                                        <div className="w-full md:w-64">
+                                            <Label htmlFor="appointment-type" className="text-gray-700 font-medium block mb-2">
+                                                Appointment Type
+                                            </Label>
+                                            <Select defaultValue="IN_PERSON" onValueChange={(value) => setAppointmentType(value)}>
+                                                <SelectTrigger className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                                                    <SelectValue placeholder="Select appointment type" />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="IN_PERSON">In-person Visit</SelectItem>
+                                                    <SelectItem value="ONLINE">Online Consultation</SelectItem>
+                                                    <SelectItem value="VIDEO_CALL">Video Call Consultation</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-sm text-gray-500 mt-1">
+                                                Choose how you would like to meet with the doctor
+                                            </p>
+                                        </div>
                                     </div>
 
                                     {filteredDoctors.length > 0 ? (
@@ -381,7 +400,7 @@ const BookAppointment = () => {
                                             </Label>
                                             <textarea
                                                 id="notes"
-                                                className="w-full border border-gray-300 rounded-md p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                                                className="w-full border text-gray-700 border-gray-300 rounded-md p-3 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
                                                 rows={4}
                                                 placeholder="Describe your symptoms or reason for the appointment..."
                                                 value={notes}
@@ -393,19 +412,6 @@ const BookAppointment = () => {
                                             <Label htmlFor="appointment-type" className="text-gray-700 font-medium block mb-2">
                                                 Appointment Type
                                             </Label>
-                                            <Select defaultValue="IN_PERSON" onValueChange={(value) => setAppointmentType(value)}>
-                                                <SelectTrigger className="w-full border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                                                    <SelectValue placeholder="Select appointment type" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="IN_PERSON">In-person Visit</SelectItem>
-                                                    <SelectItem value="VIDEO">Video Consultation</SelectItem>
-                                                </SelectContent>
-                                            </Select>
-                                            <p className="text-sm text-gray-500 mt-1">
-                                                Choose how you would like to meet with the doctor
-                                            </p>
-                                        </div>
 
                                         <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                                             <h3 className="font-semibold text-gray-900 mb-2">Appointment Information</h3>
@@ -451,6 +457,7 @@ const BookAppointment = () => {
                                             </Button>
                                         </div>
                                     </div>
+                                </div>
                                 </form>
                             )}
                         </div>

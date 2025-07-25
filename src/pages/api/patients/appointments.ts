@@ -66,6 +66,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 return res.status(404).json({ message: "Doctor not found" });
             }
 
+            // Validate and normalize appointment type
+            const validTypes = ['IN_PERSON', 'ONLINE', 'VIDEO_CALL'];
+            const validType = validTypes.includes(type) ? type : 'IN_PERSON';
+
             // Create new appointment
             const appointment = await prisma.appointment.create({
                 data: {
@@ -73,7 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     doctorId,
                     date: new Date(date),
                     time: new Date(date).toLocaleTimeString(),
-                    type: type || undefined,
+                    type: validType,
                     notes: notes || undefined,
                     status: "PENDING"
                 },

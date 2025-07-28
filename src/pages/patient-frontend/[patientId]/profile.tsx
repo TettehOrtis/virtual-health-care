@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Calendar as CalendarIcon } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Upload, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,6 +39,7 @@ const PatientProfile = () => {
         address: "",
         medicalHistory: ""
     });
+    const [profileImage, setProfileImage] = useState("");
 
     // Define sidebar items with the patientId in the paths
     const sidebarItems = [
@@ -143,6 +144,19 @@ const PatientProfile = () => {
         return age;
     };
 
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                if (event.target?.result) {
+                    setProfileImage(event.target.result as string);
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleSaveProfile = async () => {
         setSaving(true);
         try {
@@ -162,29 +176,13 @@ const PatientProfile = () => {
             });
 
             if (response.ok) {
-                const updatedProfile = await response.json();
-                setProfile(updatedProfile);
+                // Update the profile state with the form data directly
+                setProfile(prev => ({
+                    ...prev!,
+                    ...formData
+                }));
                 setEditing(false);
                 toast.success("Profile updated successfully");
-                
-                // Refetch profile to ensure data is up to date
-                const fetchProfile = async () => {
-                    try {
-                        const response = await fetch("/api/patients/profile", {
-                            headers: {
-                                Authorization: `Bearer ${token}`,
-                            },
-                        });
-                        if (response.ok) {
-                            const profileData = await response.json();
-                            setProfile(profileData);
-                        }
-                    } catch (error) {
-                        console.error("Error refetching profile:", error);
-                        toast.error("Failed to refresh profile data");
-                    }
-                };
-                fetchProfile();
             } else {
                 const errorData = await response.json();
                 toast.error(errorData.error || "Failed to update profile");
@@ -290,12 +288,28 @@ const PatientProfile = () => {
                             <div className="flex flex-col md:flex-row gap-8">
                                 {/* Profile Photo */}
                                 <div className="flex flex-col items-center">
-                                    <Avatar className="h-32 w-32 border-2 border-blue-100">
-                                        <AvatarImage src="" />
-                                        <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
-                                            {profile?.user?.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <div className="relative">
+                                        <Avatar className="h-32 w-32 border-2 border-blue-100">
+                                            <AvatarImage src={profileImage} />
+                                            <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
+                                                {profile?.user?.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        {editing && (
+                                            <div className="absolute bottom-0 right-0">
+                                                <Label htmlFor="profile-image" className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 flex items-center justify-center">
+                                                    <Upload className="h-4 w-4" />
+                                                </Label>
+                                                <Input
+                                                    id="profile-image"
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={handleImageUpload}
+                                                    accept="image/*"
+                                                />
+                                            </div>
+                                        )}
+                                    </div>
 
                                     <div className="mt-4 text-center">
                                         <h2 className="text-xl font-semibold text-gray-900">{profile?.user?.fullName || 'Loading...'}</h2>

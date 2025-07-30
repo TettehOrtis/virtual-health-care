@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Upload, Calendar as CalendarIcon } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Calendar as CalendarIcon, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 interface PatientProfile {
     id: string;
@@ -19,6 +20,7 @@ interface PatientProfile {
     phone: string;
     address: string;
     medicalHistory?: string;
+    profile_picture_url?: string;
     user: {
         fullName: string;
         email: string;
@@ -34,14 +36,24 @@ const PatientProfile = () => {
     const [saving, setSaving] = useState(false);
     const [initialLoad, setInitialLoad] = useState(true);
     const [editing, setEditing] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const { uploading, uploadImage } = useImageUpload({
+        onSuccess: (url) => {
+            if (profile) {
+                setProfile({
+                    ...profile,
+                    profile_picture_url: url
+                });
+            }
+        }
+    });
     const [formData, setFormData] = useState({
         phone: "",
         address: "",
         medicalHistory: ""
     });
-    const [profileImage, setProfileImage] = useState("");
 
-    // Define sidebar items with the patientId in the paths
     const sidebarItems = [
         {
             href: `/patient-frontend/${patientId}/dashboard`,
@@ -57,6 +69,11 @@ const PatientProfile = () => {
             href: `/patient-frontend/${patientId}/prescriptions`,
             icon: FileText,
             title: "Prescriptions",
+        },
+        {
+            href: `/patient-frontend/${patientId}/medical-records`,
+            icon: FileText,
+            title: "Medical Records",
         },
         {
             href: `/patient-frontend/${patientId}/profile`,
@@ -75,7 +92,6 @@ const PatientProfile = () => {
             if (!router.isReady) return;
 
             try {
-                // Check for authentication token
                 const token = localStorage.getItem("token") || sessionStorage.getItem("token");
                 if (!token) {
                     console.error("No token found");
@@ -83,33 +99,46 @@ const PatientProfile = () => {
                     return;
                 }
 
-                // Fetch patient profile data
                 const response = await fetch("/api/patients/profile", {
+                    method: 'GET',
                     headers: {
                         Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 });
 
-                if (response.ok) {
-                    const profileData = await response.json();
-                    setProfile(profileData);
+                if (!response.ok) {
+                    console.error('Failed to fetch profile:', response.statusText);
+                    // Try to get error details if available
+                    try {
+                        const errorData = await response.json();
+                        console.error('API Error Details:', errorData);
+                    } catch (e) {
+                        console.error('Could not parse error response');
+                    }
+                    return;
+                }
 
-                    // Initialize form data
+                try {
+                    const profileData = await response.json();
+                    console.log('Fetched profile data:', profileData);
+                    console.log('Profile user data:', profileData.user);
+                    setProfile(profileData);
                     setFormData({
                         phone: profileData.phone || "",
                         address: profileData.address || "",
                         medicalHistory: profileData.medicalHistory || ""
                     });
-                } else {
-                    console.error("Failed to fetch profile:", await response.text());
-                    toast.error("Failed to load profile data");
+                } catch (e) {
+                    console.error('Failed to parse JSON response:', e);
+                    console.error('Response text:', await response.text());
                 }
             } catch (error: any) {
                 console.error("Error fetching profile:", error);
                 toast.error("An error occurred while fetching profile data");
             } finally {
                 setLoading(false);
-                setInitialLoad(false); // Only show loading screen once
+                setInitialLoad(false);
             }
         };
 
@@ -144,17 +173,13 @@ const PatientProfile = () => {
         return age;
     };
 
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if (event.target?.result) {
-                    setProfileImage(event.target.result as string);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
+        if (!file) return;
+
+        const imageUrl = await uploadImage(file, '/api/patients/upload-profile-picture');
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const handleSaveProfile = async () => {
@@ -176,11 +201,8 @@ const PatientProfile = () => {
             });
 
             if (response.ok) {
-                // Update the profile state with the form data directly
-                setProfile(prev => ({
-                    ...prev!,
-                    ...formData
-                }));
+                const updatedProfile = await response.json();
+                setProfile(updatedProfile);
                 setEditing(false);
                 toast.success("Profile updated successfully");
             } else {
@@ -199,7 +221,7 @@ const PatientProfile = () => {
         return (
             <div className="flex justify-center items-center h-screen bg-gray-50">
                 <div className="bg-white p-8 rounded-lg shadow-md text-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
                     <p className="text-gray-700 font-medium">Loading profile...</p>
                 </div>
             </div>
@@ -259,24 +281,21 @@ const PatientProfile = () => {
                                                     medicalHistory: profile?.medicalHistory || ""
                                                 });
                                             }}
-                                            className="bg-white border-gray-300 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors duration-200"
                                         >
                                             Cancel
                                         </Button>
                                         <Button
-                                            variant="default"
-                                            className="bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-200"
                                             onClick={handleSaveProfile}
                                             disabled={saving}
                                         >
                                             {saving ? (
                                                 <>
-                                                    <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full text-white"></div>
+                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                                     Saving...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Save className="h-4 w-4 mr-2 text-white bg-blue-600 hover:bg-blue-700" />
+                                                    <Save className="h-4 w-4 mr-2" />
                                                     Save Changes
                                                 </>
                                             )}
@@ -286,40 +305,56 @@ const PatientProfile = () => {
                             </div>
 
                             <div className="flex flex-col md:flex-row gap-8">
-                                {/* Profile Photo */}
                                 <div className="flex flex-col items-center">
-                                    <div className="relative">
+                                    <div className="relative group">
                                         <Avatar className="h-32 w-32 border-2 border-blue-100">
-                                            <AvatarImage src={profileImage} />
+                                            <AvatarImage
+                                                src={profile?.profile_picture_url ?
+                                                    `${profile.profile_picture_url}?${new Date().getTime()}` :
+                                                    undefined
+                                                }
+                                            />
                                             <AvatarFallback className="bg-blue-100 text-blue-700 text-2xl font-bold">
                                                 {profile?.user?.fullName?.split(' ').map(n => n[0]).join('') || 'U'}
                                             </AvatarFallback>
                                         </Avatar>
                                         {editing && (
-                                            <div className="absolute bottom-0 right-0">
-                                                <Label htmlFor="profile-image" className="cursor-pointer bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 flex items-center justify-center">
-                                                    <Upload className="h-4 w-4" />
-                                                </Label>
-                                                <Input
-                                                    id="profile-image"
+                                            <div
+                                                className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                                onClick={() => fileInputRef.current?.click()}
+                                                role="button"
+                                                aria-label="Change profile picture"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                                            >
+                                                {uploading ? (
+                                                    <Loader2 className="h-8 w-8 text-white animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Upload className="h-8 w-8 text-white" />
+                                                        <span className="sr-only">Upload profile picture</span>
+                                                    </>
+                                                )}
+                                                <input
                                                     type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleFileChange}
+                                                    accept="image/jpeg, image/png, image/gif"
                                                     className="hidden"
-                                                    onChange={handleImageUpload}
-                                                    accept="image/*"
+                                                    disabled={uploading}
                                                 />
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="mt-4 text-center">
-                                        <h2 className="text-xl font-semibold text-gray-900">{profile?.user?.fullName || 'Loading...'}</h2>
+                                        <h2 className="text-xl font-semibold text-gray-900">{profile?.user?.fullName || 'Unknown'}</h2>
                                         <p className="text-gray-500">
-                                            Patient • {calculateAge(profile?.dateOfBirth || '')} years • {profile?.gender || 'Loading...'}
+                                            Patient • {profile?.dateOfBirth ? calculateAge(profile.dateOfBirth) : 'N/A'} years • {profile?.gender || 'N/A'}
                                         </p>
                                     </div>
                                 </div>
 
-                                {/* Profile Info */}
                                 <div className="flex-1">
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                                         <div>
@@ -327,14 +362,14 @@ const PatientProfile = () => {
                                                 <Mail className="h-4 w-4 mr-2" />
                                                 Email
                                             </p>
-                                            <p className="text-gray-900">{profile?.user?.email || 'Loading...'}</p>
+                                            <p className="text-gray-900">{profile?.user?.email}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
                                                 <CalendarIcon className="h-4 w-4 mr-2" />
                                                 Date of Birth
                                             </p>
-                                            <p className="text-gray-900">{profile?.dateOfBirth ? formatDate(profile.dateOfBirth) : 'Loading...'}</p>
+                                            <p className="text-gray-900">{profile?.dateOfBirth ? formatDate(profile.dateOfBirth) : 'N/A'}</p>
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium text-gray-500 flex items-center mb-1">
@@ -342,15 +377,12 @@ const PatientProfile = () => {
                                                 Phone Number
                                             </p>
                                             {editing ? (
-                                                <div>
-                                                    <Input
-                                                        name="phone"
-                                                        value={formData.phone}
-                                                        onChange={handleInputChange}
-                                                        placeholder="Enter your phone number"
-                                                        className="mt-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    name="phone"
+                                                    value={formData.phone}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter your phone number"
+                                                />
                                             ) : (
                                                 <p className="text-gray-900">{profile?.phone || "Not provided"}</p>
                                             )}
@@ -361,15 +393,12 @@ const PatientProfile = () => {
                                                 Address
                                             </p>
                                             {editing ? (
-                                                <div>
-                                                    <Input
-                                                        name="address"
-                                                        value={formData.address}
-                                                        onChange={handleInputChange}
-                                                        placeholder="Enter your address"
-                                                        className="mt-1 bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                                                    />
-                                                </div>
+                                                <Input
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter your address"
+                                                />
                                             ) : (
                                                 <p className="text-gray-900">{profile?.address || "Not provided"}</p>
                                             )}
@@ -377,19 +406,19 @@ const PatientProfile = () => {
                                     </div>
 
                                     <div className="mt-6">
-                                        <Label className="text-sm font-medium text-gray-700 ">Medical History</Label>
+                                        <Label>Medical History</Label>
                                         {editing ? (
                                             <Textarea
                                                 name="medicalHistory"
                                                 value={formData.medicalHistory}
                                                 onChange={handleInputChange}
                                                 placeholder="Enter any relevant medical history, conditions, or allergies"
-                                                className="mt-1 h-32 bg-white border border-gray-300 rounded-md px-3 py-2 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                                className="mt-1 h-32"
                                             />
                                         ) : (
                                             <div className="mt-2 p-4 bg-gray-50 rounded-md">
                                                 <p className="text-gray-700 whitespace-pre-line">
-                                                    {profile?.medicalHistory ? profile.medicalHistory : "No medical history provided"}
+                                                    {profile?.medicalHistory || "No medical history provided"}
                                                 </p>
                                             </div>
                                         )}
@@ -397,16 +426,16 @@ const PatientProfile = () => {
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-lg shadow-md p-6">
+                            <div className="mt-6 bg-white rounded-lg shadow-md p-6">
                                 <h2 className="text-xl font-semibold text-gray-900 mb-4">Account Information</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
                                         <p className="text-sm font-medium text-gray-500">Member Since</p>
-                                        <p className="text-gray-900">{profile?.user?.createdAt ? formatDate(profile.user.createdAt) : 'Loading...'}</p>
+                                        <p className="text-gray-900">{profile?.user?.createdAt ? formatDate(profile.user.createdAt) : 'N/A'}</p>
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-500">Account ID</p>
-                                        <p className="text-gray-900">{profile?.id || 'Loading...'}</p>
+                                        <p className="text-gray-900">{profile.id}</p>
                                     </div>
                                 </div>
                             </div>
@@ -418,4 +447,4 @@ const PatientProfile = () => {
     );
 };
 
-export default PatientProfile; 
+export default PatientProfile;

@@ -38,9 +38,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     address: address || undefined,
                     medicalHistory: medicalHistory || undefined,
                 },
+                include: { user: true },
             });
 
-            return res.status(200).json({ message: "Profile updated successfully", updatedPatient });
+            return res.status(200).json(updatedPatient);
         }
 
         if (req.method === "PATCH") {

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useRouter } from "next/router";
+import { useAuth } from "@/contexts/AuthContext";
 
 type UserRole = "PATIENT" | "DOCTOR";
 
@@ -14,6 +15,7 @@ const AuthForm = () => {
   const [userRole, setUserRole] = useState<UserRole>("PATIENT");
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
 
   // Form state for registration
   const [formData, setFormData] = useState({
@@ -69,9 +71,9 @@ const AuthForm = () => {
 
         if (response.ok) {
           setIsLoading(false);
-          // Store token in both localStorage and memory
-          localStorage.setItem('token', data.token);
-          window.sessionStorage.setItem('token', data.token);
+
+          // Use auth context to login
+          login(data.token, data.user);
 
           toast.success("Login successful!");
 

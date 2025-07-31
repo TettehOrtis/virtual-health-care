@@ -79,6 +79,11 @@ const PatientDashboard = () => {
             title: "Prescriptions",
         },
         {
+            href: `/patient-frontend/${patientId}/medical-records`,
+            icon: FileText,
+            title: "Medical Records",
+        },
+        {
             href: `/patient-frontend/${patientId}/profile`,
             icon: UserCircle,
             title: "My Profile",

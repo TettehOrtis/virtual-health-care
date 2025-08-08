@@ -32,6 +32,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json(medicalRecords)
     }
 
+    if (req.method === "POST") {
+      const { fileUrl, title, description, fileType, fileName, size, id } = req.body;
+      if (!fileUrl || !title || !fileType || !fileName || !size || !id) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+      // Get patient from database
+      const patient = await prisma.patient.findUnique({
+        where: { supabaseId: user.supabaseId },
+        include: { user: true }
+      });
+      if (!patient) {
+        return res.status(404).json({ message: "Patient profile not found" });
+      }
+      // Create medical record
+      const medicalRecord = await prisma.medicalRecord.create({
+        data: {
+          id,
+          patientId: patient.id,
+          title,
+          description: description || null,
+          fileUrl,
+          fileType,
+          fileName,
+          size,
+          uploadedAt: new Date(),
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      });
+      return res.status(201).json(medicalRecord);
+    }
+
     if (req.method === "DELETE") {
       const { recordId } = req.query
 

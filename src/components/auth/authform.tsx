@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 type UserRole = "PATIENT" | "DOCTOR";
 
@@ -74,6 +75,16 @@ const AuthForm = () => {
 
           // Use auth context to login
           login(data.token, data.user);
+
+          // ALSO sign in to Supabase Auth in the browser
+          const { error: supabaseError } = await supabase.auth.signInWithPassword({
+            email: formData.email,
+            password: formData.password,
+          });
+          if (supabaseError) {
+            // Optionally show a warning, but don't block your login
+            console.warn("Supabase Auth sign-in failed:", supabaseError.message);
+          }
 
           toast.success("Login successful!");
 

@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useRouter } from "next/router";
 
 import { LayoutDashboard, FileText, Plus, UserCircle, Users, Info, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,6 +23,8 @@ interface FormData {
 }
 
 const CreatePrescriptionForm: React.FC<CreatePrescriptionFormProps> = ({ patientId, onSubmit }) => {
+  const router = useRouter();
+  const { doctorId } = router.query;
   const [formData, setFormData] = useState<FormData>({
     medication: "",
     dosage: "",
@@ -82,14 +85,14 @@ const CreatePrescriptionForm: React.FC<CreatePrescriptionFormProps> = ({ patient
               <p className="text-sm text-gray-500">Fill in the prescription details below</p>
             </div>
             <Button variant="ghost" asChild className="gap-2">
-              <Link href="/doctor-frontend/prescriptions">
+              <Link href={doctorId ? `/doctor-frontend/${doctorId}/prescriptions` : "/doctor-frontend/prescriptions"}>
                 <Plus className="h-4 w-4" />
                 Back to Prescriptions
               </Link>
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -150,7 +153,7 @@ const CreatePrescriptionForm: React.FC<CreatePrescriptionFormProps> = ({ patient
         </CardContent>
       </Card>
     </div>
-  ); 
+  );
 };
 
 export default CreatePrescriptionForm;

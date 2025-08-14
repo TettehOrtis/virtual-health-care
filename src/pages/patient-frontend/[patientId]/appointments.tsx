@@ -102,21 +102,23 @@ const PatientAppointments = () => {
         fetchAppointments();
     }, [router.isReady, patientId, router]);
 
-    // Filter appointments based on search term and status
-    const filteredAppointments = appointments.filter(appointment => {
-        const matchesSearch =
-            appointment.doctor.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            appointment.doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (appointment.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+    // Filter appointments based on search term and status, and exclude cancelled appointments
+    const filteredAppointments = appointments
+        .filter(appointment => appointment.status !== 'CANCELED')
+        .filter(appointment => {
+            const matchesSearch =
+                appointment.doctor.user.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                appointment.doctor.specialization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (appointment.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-        const matchesStatus =
-            statusFilter === "all" ||
-            appointment.status.toLowerCase() === statusFilter.toLowerCase() ||
-            (statusFilter === "canceled" &&
-                (appointment.status === "CANCELED" || appointment.status === "REJECTED"));
+            const matchesStatus =
+                statusFilter === "all" ||
+                appointment.status.toLowerCase() === statusFilter.toLowerCase() ||
+                (statusFilter === "canceled" &&
+                    (appointment.status === "CANCELED" || appointment.status === "REJECTED"));
 
-        return matchesSearch && matchesStatus;
-    });
+            return matchesSearch && matchesStatus;
+        });
 
     // Add this function for status badge styling (similar to doctor page)
     const getStatusBadgeClasses = (status: string) => {
@@ -260,7 +262,7 @@ const PatientAppointments = () => {
                                                                 <span className="font-medium">{new Date(appointment.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                
+
                                                                 <span>{formatAppointmentTime(appointment.date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">

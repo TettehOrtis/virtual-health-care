@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileText, Download, Trash2, Calendar, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/lib/supabase';
 
 interface MedicalRecord {
   id: string;
@@ -84,14 +85,45 @@ const MedicalRecordsList = () => {
     }
   };
 
-  const downloadRecord = (record: MedicalRecord) => {
-    const link = document.createElement('a');
-    link.href = record.fileUrl;
-    link.download = record.fileName;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const deriveStoragePath = (fileUrl: string): string => {
+    // If already a relative path (no scheme), return as-is
+    if (!fileUrl.startsWith('http')) return fileUrl;
+    // Handle both public and signed URL variants
+    const markers = [
+      '/storage/v1/object/public/medical-records/',
+      '/storage/v1/object/sign/medical-records/'
+    ];
+    for (const marker of markers) {
+      const idx = fileUrl.indexOf(marker);
+      if (idx !== -1) return fileUrl.substring(idx + marker.length);
+    }
+    // Fallback: try to find after last occurrence of '/medical-records/'
+    const genericIdx = fileUrl.lastIndexOf('/medical-records/');
+    if (genericIdx !== -1) return fileUrl.substring(genericIdx + '/medical-records/'.length);
+    // Could not derive, return original (frontend will fallback to direct link)
+    return fileUrl;
+  };
+
+  const downloadRecord = async (record: MedicalRecord) => {
+    try {
+      // Prefer server-signed URL to avoid client auth/session issues
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const res = await fetch(`/api/patients/medical-records-sign?recordId=${record.id}&downloadName=${encodeURIComponent(record.fileName)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to get signed URL');
+      const { url } = await res.json();
+      if (!url) throw new Error('Signed URL missing');
+      window.location.href = url;
+    } catch (e) {
+      const link = document.createElement('a');
+      link.href = record.fileUrl;
+      link.download = record.fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const formatFileSize = (bytes: number) => {

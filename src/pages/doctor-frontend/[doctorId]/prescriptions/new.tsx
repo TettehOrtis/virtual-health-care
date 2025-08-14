@@ -6,6 +6,7 @@ import { LayoutDashboard, Calendar, FileText, UserCircle, Users, Search, Plus, F
 import { Button } from "@/components/ui/button";
 import CreatePrescriptionForm from "@/components/prescription/CreatePrescriptionForm";
 import { toast } from "sonner";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 interface Patient {
   id: string;
@@ -21,6 +22,7 @@ const CreatePrescription = () => {
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patient, setPatient] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
   // Define sidebar items with the doctorId in the paths
   const sidebarItems = [
@@ -50,6 +52,31 @@ const CreatePrescription = () => {
       title: "My Profile",
     }
   ];
+
+  useEffect(() => {
+    const fetchPatients = async () => {
+      if (!router.isReady) return;
+      try {
+        const token = localStorage.getItem("token") || sessionStorage.getItem("token");
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+        const response = await fetch(`/api/doctors/patients`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPatients(data);
+        }
+      } catch (error) {
+        // handle error
+      }
+    };
+    fetchPatients();
+  }, [router.isReady]);
 
   useEffect(() => {
     const fetchPatient = async () => {
@@ -124,7 +151,7 @@ const CreatePrescription = () => {
       });
 
       const responseData = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(responseData.message || 'Failed to create prescription');
       }
@@ -141,42 +168,50 @@ const CreatePrescription = () => {
     return <div className="flex justify-center items-center h-screen">Loading...</div>;
   }
 
-  if (!patientId) {
-    return (
-      <MainLayout>
-        <DashboardSidebar items={sidebarItems} />
-        <div className="flex-1 p-8">
-          <div className="max-w-2xl mx-auto">
-            <h1 className="text-2xl font-bold mb-4">Create Prescription</h1>
-            <p className="text-gray-600 mb-6">Please select a patient from the list to create a prescription.</p>
-            <Button
-              onClick={() => router.push(`/doctor-frontend/${doctorId}/prescriptions`)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Back to Prescriptions
-            </Button>
-          </div>
-        </div>
-      </MainLayout>
-    );
-  }
-
   return (
     <MainLayout>
       <div className="flex h-screen bg-gray-100">
         <DashboardSidebar items={sidebarItems} className="h-full" />
-        
         <div className="flex-1 flex flex-col">
           <div className="h-16 flex items-center px-8 border-b bg-white">
             <h1 className="text-2xl font-semibold text-gray-900">Create Prescription</h1>
           </div>
-          
           <div className="flex-1 overflow-y-auto p-8">
             <div className="max-w-4xl mx-auto">
-              <CreatePrescriptionForm
-                patientId={patientId || ''}
-                onSubmit={handleSubmit}
-              />
+              {/* Patient selection if not selected */}
+              {!patientId && (
+                <div className="mb-8">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Select Patient</label>
+                  <Select
+                    value={patientId || undefined}
+                    onValueChange={(value) => {
+                      setPatientId(value);
+                      router.replace({
+                        pathname: router.pathname,
+                        query: { ...router.query, patientId: value },
+                      }, undefined, { shallow: true });
+                    }}
+                  >
+                    <SelectTrigger className="w-full md:w-96">
+                      <SelectValue placeholder="Choose a patient..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {patients.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.user.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {/* Show form only if patient is selected */}
+              {patientId && (
+                <CreatePrescriptionForm
+                  patientId={patientId}
+                  onSubmit={handleSubmit}
+                />
+              )}
             </div>
           </div>
         </div>

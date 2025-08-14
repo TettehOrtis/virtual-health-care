@@ -49,13 +49,13 @@ export default async function handler(
     keepExtensions: true,
     filter: (part) => {
       return !!(
-        part.name === 'file' && 
+        part.name === 'file' &&
         (part.mimetype?.includes('application/pdf') ||
-        part.mimetype?.includes('image/') ||
-        part.mimetype?.includes('text/') ||
-        part.mimetype?.includes('application/msword') ||
-        part.mimetype?.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-      )
+          part.mimetype?.includes('image/') ||
+          part.mimetype?.includes('text/') ||
+          part.mimetype?.includes('application/msword') ||
+          part.mimetype?.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+        )
       )
     }
   })
@@ -85,7 +85,7 @@ export default async function handler(
       console.error('Patient not found for supabaseId:', user.supabaseId)
       return res.status(404).json({ message: 'Patient profile not found' })
     }
-    
+
     console.log('Found patient:', { id: patient.id, name: patient.user.fullName })
 
     // Handle file data - formidable v1.x structure
@@ -123,7 +123,8 @@ export default async function handler(
     // Generate unique filename
     const fileExt = file.name?.split('.').pop() || 'pdf'
     const uniqueId = crypto.randomUUID()
-    const filePath = `medical-records/${patient.id}/${uniqueId}.${fileExt}`
+    // Store object key relative to the bucket root (no bucket prefix)
+    const filePath = `${patient.id}/${uniqueId}.${fileExt}`
 
     // Read file content
     if (!file.path) {
@@ -164,7 +165,8 @@ export default async function handler(
         patientId: patient.id,
         title: title,
         description: description || null,
-        fileUrl: publicUrl,
+        // Save the relative path for RLS policies and signed URL creation
+        fileUrl: filePath,
         fileType: file.type || 'application/octet-stream',
         fileName: file.name,
         size: file.size,

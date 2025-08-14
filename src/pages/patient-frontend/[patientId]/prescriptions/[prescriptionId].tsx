@@ -116,6 +116,31 @@ const PrescriptionDetail = () => {
         return new Date(dateString).toLocaleDateString('en-US', options);
     };
 
+    const handleDownload = async () => {
+        try {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            if (!token || !prescriptionId) return;
+            const res = await fetch(`/api/patients/prescriptions/pdf?id=${prescriptionId}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!res.ok) {
+                toast.error('Failed to generate PDF');
+                return;
+            }
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `prescription-${prescriptionId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (e) {
+            toast.error('Download failed');
+        }
+    };
+
     // Display loading state
     if (loading) {
         return (
@@ -179,6 +204,7 @@ const PrescriptionDetail = () => {
                                 <Button
                                     variant="outline"
                                     className="border-gray-200 text-gray-700 hover:bg-gray-50"
+                                    onClick={handleDownload}
                                 >
                                     <Download className="h-4 w-4 mr-2" />
                                     Download PDF

@@ -71,6 +71,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                         orderBy: {
                             createdAt: 'desc'
                         }
+                    },
+                    MedicalRecord: {
+                        orderBy: { uploadedAt: 'desc' },
+                        select: {
+                            id: true,
+                            title: true,
+                            description: true,
+                            fileUrl: true,
+                            fileType: true,
+                            fileName: true,
+                            uploadedAt: true,
+                        }
                     }
                 }
             });

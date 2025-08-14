@@ -89,10 +89,11 @@ const MedicalRecordUpload = ({ onUploadSuccess }: MedicalRecordUploadProps) => {
         throw new Error('Invalid user data');
       }
 
-      // Generate unique file path using user ID from your system
+      // Generate unique storage path (relative to bucket) using your patient ID
       const fileExt = selectedFile.name.split('.').pop();
       const uniqueId = uuidv4();
-      const filePath = `medical-records/${userData.id}/${uniqueId}.${fileExt}`;
+      // Important: Do NOT prefix with the bucket name. Object keys are relative to the bucket root.
+      const filePath = `${userData.id}/${uniqueId}.${fileExt}`;
 
       // Upload to Supabase Storage
       const { error: uploadError } = await supabase.storage
@@ -106,11 +107,8 @@ const MedicalRecordUpload = ({ onUploadSuccess }: MedicalRecordUploadProps) => {
         throw new Error(uploadError.message);
       }
 
-      // Get public URL (or signed URL if private)
-      const { data } = supabase.storage
-        .from('medical-records')
-        .getPublicUrl(filePath);
-      const fileUrl = data?.publicUrl || '';
+      // Use relative storage path for DB (needed for storage RLS policies)
+      const storagePath = filePath;
 
       // Call backend API to create DB record
       const response = await fetch('/api/patients/medical-records', {
@@ -122,7 +120,7 @@ const MedicalRecordUpload = ({ onUploadSuccess }: MedicalRecordUploadProps) => {
         body: JSON.stringify({
           title,
           description,
-          fileUrl,
+          fileUrl: storagePath,
           fileType: selectedFile.type,
           fileName: selectedFile.name,
           size: selectedFile.size,

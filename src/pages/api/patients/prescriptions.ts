@@ -16,10 +16,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(403).json({ message: "Access Denied" });
         }
 
-        // Fetch patient's prescriptions
+        // Find the patient by supabaseId to get internal patient.id
+        const patient = await prisma.patient.findUnique({
+            where: { supabaseId: user.supabaseId },
+        });
+
+        if (!patient) {
+            return res.status(404).json({ message: "Patient profile not found" });
+        }
+
+        // Fetch patient's prescriptions using patient.id
         const prescriptions = await prisma.prescription.findMany({
-            where: { patientId: user.supabaseId },
-            include: { doctor: { include: { user: true } } }, // Include doctor details
+            where: { patientId: patient.id },
+            include: { doctor: { include: { user: true } } },
+            orderBy: { createdAt: 'desc' },
         });
 
         res.status(200).json(prescriptions);

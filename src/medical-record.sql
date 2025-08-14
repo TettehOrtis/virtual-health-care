@@ -170,7 +170,7 @@ using (
     select 1 
     from public."MedicalRecord" as mr
     join public."Patient" as p on mr."patientId" = p.id
-    where mr."fileUrl" = storage.objects.name
+    where mr."fileUrl" = storage.objects.name -- store relative path like medical-records/<patientId>/<file>
     and auth.uid()::text = p."supabaseId"
   )
 );
@@ -185,7 +185,7 @@ using (
     select 1 
     from public."MedicalRecord" as mr
     join public."Doctor" as d on true
-    where mr."fileUrl" = storage.objects.name
+    where mr."fileUrl" = storage.objects.name -- stored relative path
     and d."supabaseId"::text = auth.uid()::text
     and (
       exists (

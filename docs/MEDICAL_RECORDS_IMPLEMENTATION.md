@@ -270,3 +270,57 @@ Added "Medical Records" to patient dashboard sidebar:
 - Text file (test basic functionality)
 - Large file (test size validation)
 - Invalid file type (test error handling) 
+
+## Secure Medical Record Upload Flow (Frontend + Supabase Auth)
+
+### Overview
+This system uses a hybrid authentication approach: users log in via a custom API (which issues a JWT for backend API access) and are also signed in to Supabase Auth in the browser (for secure, RLS-protected file uploads to Supabase Storage).
+
+### Step-by-Step Process
+
+1. **User Login**
+   - User submits email and password via the login form.
+   - The frontend sends credentials to `/api/auth/login` (custom API).
+   - On success, the frontend stores the JWT and user info, and also signs in to Supabase Auth using `supabase.auth.signInWithPassword`.
+
+2. **Uploading a Medical Record**
+   - The user selects a file and enters metadata in the upload form.
+   - The frontend fetches user info from `/api/auth/me` using the JWT.
+   - The file is uploaded directly from the browser to Supabase Storage using the Supabase JS client (now authenticated as the user).
+   - The upload path includes the user ID for organization.
+   - After upload, the frontend gets the public URL and calls `/api/patients/medical-records` (backend API) to create a database record for the medical record.
+
+3. **Row Level Security (RLS) Enforcement**
+   - Supabase Storage RLS policy enforces that only authenticated users can upload to the `medical-records` bucket:
+     ```sql
+     with check (bucket_id = 'medical-records' and auth.role() = 'authenticated');
+     ```
+   - This ensures only logged-in users (with a Supabase session) can upload files.
+
+### Key Points
+- **Frontend must sign in to Supabase Auth after custom login** to ensure uploads are authenticated.
+- **Custom JWT is still used for backend API calls** (e.g., creating the DB record).
+- **Supabase Storage RLS policy remains secure** and only allows uploads from authenticated users.
+
+### Example Code Snippet (Login)
+```js
+// After successful custom login
+login(data.token, data.user);
+// Also sign in to Supabase Auth
+const { error: supabaseError } = await supabase.auth.signInWithPassword({
+  email: formData.email,
+  password: formData.password,
+});
+```
+
+### Example Code Snippet (Upload)
+```js
+// Get Supabase Auth user (now available)
+const { data: { user } } = await supabase.auth.getUser();
+const filePath = `medical-records/${user.id}/${uniqueId}.${fileExt}`;
+// Upload to Supabase Storage
+await supabase.storage.from('medical-records').upload(filePath, selectedFile, { ... });
+```
+
+---
+This approach ensures secure, RLS-protected uploads while maintaining compatibility with your custom authentication system. 

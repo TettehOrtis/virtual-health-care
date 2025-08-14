@@ -3,11 +3,12 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, Users, ArrowLeft, Clock, Pill, Calendar as CalendarIcon } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, Users, ArrowLeft, Clock, Pill, Download, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { supabase } from '@/lib/supabase';
 
 interface User {
     supabaseId: string;
@@ -29,6 +30,16 @@ interface Prescription {
     createdAt: string;
 }
 
+interface MedicalRecord {
+    id: string;
+    title: string;
+    description?: string;
+    fileUrl: string;
+    fileType: string;
+    fileName: string;
+    uploadedAt: string;
+}
+
 interface Patient {
     id: string;
     dateOfBirth: string;
@@ -39,6 +50,7 @@ interface Patient {
     user: User;
     appointments: Appointment[];
     prescriptions: Prescription[];
+    MedicalRecord: MedicalRecord[];
 }
 
 const PatientDetails = () => {
@@ -126,6 +138,42 @@ const PatientDetails = () => {
             age--;
         }
         return age;
+    };
+
+    const deriveStoragePath = (fileUrl: string): string | null => {
+        // Expected public URL format: .../storage/v1/object/public/medical-records/<path>
+        const marker = '/storage/v1/object/public/medical-records/';
+        const idx = fileUrl.indexOf(marker);
+        if (idx === -1) return null;
+        return fileUrl.substring(idx + marker.length);
+    };
+
+    const handleViewRecord = async (fileUrl: string) => {
+        try {
+            const path = deriveStoragePath(fileUrl);
+            if (!path) return window.open(fileUrl, '_blank');
+            const { data, error } = await supabase.storage
+                .from('medical-records')
+                .createSignedUrl(path, 60 * 5); // 5 minutes
+            if (error || !data?.signedUrl) return window.open(fileUrl, '_blank');
+            window.open(data.signedUrl, '_blank');
+        } catch {
+            window.open(fileUrl, '_blank');
+        }
+    };
+
+    const handleDownloadRecord = async (fileUrl: string, fileName: string) => {
+        try {
+            const path = deriveStoragePath(fileUrl);
+            if (!path) return window.open(fileUrl, '_blank');
+            const { data, error } = await supabase.storage
+                .from('medical-records')
+                .createSignedUrl(path, 60 * 5, { download: true, downloadName: fileName });
+            if (error || !data?.signedUrl) return window.open(fileUrl, '_blank');
+            window.location.href = data.signedUrl;
+        } catch {
+            window.open(fileUrl, '_blank');
+        }
     };
 
     if (loading) {
@@ -245,6 +293,12 @@ const PatientDetails = () => {
                                     className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-base px-4 py-2"
                                 >
                                     Prescriptions
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="medical-records"
+                                    className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:shadow-sm text-base px-4 py-2"
+                                >
+                                    Medical Records
                                 </TabsTrigger>
                             </TabsList>
 
@@ -378,6 +432,45 @@ const PatientDetails = () => {
                                                 Create Prescription
                                             </Link>
                                         </Button>
+                                    </div>
+                                )}
+                            </TabsContent>
+
+                            <TabsContent value="medical-records" className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+                                <div className="flex justify-between items-center border-b border-gray-200 pb-3 mb-4">
+                                    <h2 className="text-xl font-semibold text-gray-900">Medical Records</h2>
+                                </div>
+
+                                {patient.MedicalRecord && patient.MedicalRecord.length > 0 ? (
+                                    <div className="space-y-4">
+                                        {patient.MedicalRecord.map(record => (
+                                            <div key={record.id} className="border border-gray-200 rounded-md p-4 hover:bg-gray-50">
+                                                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <FileText className="h-5 w-5 text-blue-600" />
+                                                            <h3 className="font-semibold text-gray-900">{record.title}</h3>
+                                                        </div>
+                                                        {record.description && (
+                                                            <p className="text-gray-700 mt-1">{record.description}</p>
+                                                        )}
+                                                        <p className="text-xs text-gray-500 mt-2">Uploaded on {formatDate(record.uploadedAt)}</p>
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <Button variant="outline" size="sm" className="border-gray-200" onClick={() => handleViewRecord(record.fileUrl)}>
+                                                            View
+                                                        </Button>
+                                                        <Button variant="outline" size="sm" className="border-gray-200" onClick={() => handleDownloadRecord(record.fileUrl, record.fileName)}>
+                                                            <Download className="h-4 w-4 mr-2" /> Download
+                                                        </Button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-8 bg-gray-50 rounded-md">
+                                        <p className="text-gray-500 italic font-medium">No medical records uploaded for this patient.</p>
                                     </div>
                                 )}
                             </TabsContent>

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
 import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Search, Download, FileText as FileIcon, Filter, ArrowLeft, Video, Users, Clock } from "lucide-react";
+import VideoConsultationButton from "@/components/video/VideoConsultationButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,7 +19,7 @@ interface Appointment {
     id: string;
     date: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELED';
-    type?: 'VIDEO' | 'IN_PERSON';
+    type?: 'IN_PERSON' | 'ONLINE' | 'VIDEO_CALL';
     notes?: string;
     patientId: string;
     doctorId: string;
@@ -231,11 +232,11 @@ const DoctorAppointments = () => {
                 // Update local state
                 setAppointments(prevAppointments =>
                     prevAppointments.map(apt =>
-                        apt.id === selectedAppointment?.id ? { 
-                            ...apt, 
+                        apt.id === selectedAppointment?.id ? {
+                            ...apt,
                             date: newDate,
                             type,
-                            status: "PENDING" as any 
+                            status: "PENDING" as any
                         } : apt
                     )
                 );
@@ -426,10 +427,15 @@ const DoctorAppointments = () => {
                                                                 <span>{formatAppointmentTime(appointment.date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                {appointment.type === "VIDEO" ? (
+                                                                {appointment.type === "VIDEO_CALL" ? (
                                                                     <>
                                                                         <Video className="h-4 w-4" />
                                                                         <span>Video Consultation</span>
+                                                                    </>
+                                                                ) : appointment.type === "ONLINE" ? (
+                                                                    <>
+                                                                        <Video className="h-4 w-4" />
+                                                                        <span>Online Consultation</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
@@ -460,12 +466,14 @@ const DoctorAppointments = () => {
                                                             )}
                                                             {appointment.status === "APPROVED" && (
                                                                 <div className="flex gap-2">
-                                                                    <Button
-                                                                        className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                                        onClick={() => handleStartSession(appointment.id)}
-                                                                    >
-                                                                        Start Session
-                                                                    </Button>
+                                                                    {appointment.type === "VIDEO_CALL" && (
+                                                                        <VideoConsultationButton
+                                                                            appointmentId={appointment.id}
+                                                                            appointmentType={appointment.type}
+                                                                            appointmentStatus={appointment.status}
+                                                                            userRole="DOCTOR"
+                                                                        />
+                                                                    )}
                                                                     <Button
                                                                         variant="outline"
                                                                         className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
@@ -527,10 +535,15 @@ const DoctorAppointments = () => {
                                                                 <span>{formatAppointmentTime(appointment.date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                {appointment.type === "VIDEO" ? (
+                                                                {appointment.type === "VIDEO_CALL" ? (
                                                                     <>
                                                                         <Video className="h-4 w-4" />
                                                                         <span>Video Consultation</span>
+                                                                    </>
+                                                                ) : appointment.type === "ONLINE" ? (
+                                                                    <>
+                                                                        <Video className="h-4 w-4" />
+                                                                        <span>Online Consultation</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
@@ -568,6 +581,14 @@ const DoctorAppointments = () => {
                                                             )}
                                                             {appointment.status === 'APPROVED' && (
                                                                 <>
+                                                                    {appointment.type === "VIDEO_CALL" && (
+                                                                        <VideoConsultationButton
+                                                                            appointmentId={appointment.id}
+                                                                            appointmentType={appointment.type}
+                                                                            appointmentStatus={appointment.status}
+                                                                            userRole="DOCTOR"
+                                                                        />
+                                                                    )}
                                                                     <Button
                                                                         variant="outline"
                                                                         className="bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
@@ -629,10 +650,15 @@ const DoctorAppointments = () => {
                                                                 <span>{formatAppointmentTime(appointment.date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                {appointment.type === "VIDEO" ? (
+                                                                {appointment.type === "VIDEO_CALL" ? (
                                                                     <>
                                                                         <Video className="h-4 w-4" />
                                                                         <span>Video Consultation</span>
+                                                                    </>
+                                                                ) : appointment.type === "ONLINE" ? (
+                                                                    <>
+                                                                        <Video className="h-4 w-4" />
+                                                                        <span>Online Consultation</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
@@ -680,13 +706,13 @@ const DoctorAppointments = () => {
                     </div>
                 </div>
             </div>
-                    {/* Reschedule Modal */}
-                    <RescheduleAppointment
-                        isOpen={isRescheduleModalOpen}
-                        onClose={() => setIsRescheduleModalOpen(false)}
-                        appointment={selectedAppointment}
-                        onReschedule={handleRescheduleConfirm}
-                    />
+            {/* Reschedule Modal */}
+            <RescheduleAppointment
+                isOpen={isRescheduleModalOpen}
+                onClose={() => setIsRescheduleModalOpen(false)}
+                appointment={selectedAppointment}
+                onReschedule={handleRescheduleConfirm}
+            />
 
         </MainLayout>
     );

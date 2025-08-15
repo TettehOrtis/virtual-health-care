@@ -4,6 +4,7 @@ import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
 import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Search, Download, FileText as FileIcon, Filter, ArrowLeft, Video, Users } from "lucide-react";
+import VideoConsultationButton from "@/components/video/VideoConsultationButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -16,7 +17,7 @@ interface Appointment {
     date: string;
     time?: string;
     status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED' | 'CANCELED';
-    type?: 'VIDEO' | 'IN_PERSON';
+    type?: 'IN_PERSON' | 'ONLINE' | 'VIDEO_CALL';
     notes?: string;
     doctor: {
         id: string;
@@ -266,10 +267,15 @@ const PatientAppointments = () => {
                                                                 <span>{formatAppointmentTime(appointment.date)}</span>
                                                             </div>
                                                             <div className="flex items-center gap-2 text-sm text-gray-600">
-                                                                {appointment.type === "VIDEO" ? (
+                                                                {appointment.type === "VIDEO_CALL" ? (
                                                                     <>
                                                                         <Video className="h-4 w-4" />
                                                                         <span>Video Consultation</span>
+                                                                    </>
+                                                                ) : appointment.type === "ONLINE" ? (
+                                                                    <>
+                                                                        <Video className="h-4 w-4" />
+                                                                        <span>Online Consultation</span>
                                                                     </>
                                                                 ) : (
                                                                     <>
@@ -306,14 +312,12 @@ const PatientAppointments = () => {
                                                         )}
 
                                                         {appointment.status === "APPROVED" && (
-                                                            <Button
-                                                                variant="default"
-                                                                size="sm"
-                                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                                            >
-                                                                <Video className="h-4 w-4 mr-2" />
-                                                                Join Consultation
-                                                            </Button>
+                                                            <VideoConsultationButton
+                                                                appointmentId={appointment.id}
+                                                                appointmentType={appointment.type || "IN_PERSON"}
+                                                                appointmentStatus={appointment.status}
+                                                                userRole="PATIENT"
+                                                            />
                                                         )}
 
                                                         {appointment.status === "COMPLETED" && (

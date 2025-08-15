@@ -66,6 +66,8 @@ model Appointment {
   type      AppointmentType   @default(IN_PERSON)
   notes     String?
   status    AppointmentStatus @default(PENDING)
+  meetingId String?           // Unique meeting identifier
+  meetingUrl String?          // Jitsi Meet URL
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   doctor    Doctor            @relation(fields: [doctorId], references: [id])

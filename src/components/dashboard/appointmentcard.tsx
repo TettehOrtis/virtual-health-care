@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, VideoIcon } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import VideoConsultationButton from "@/components/video/VideoConsultationButton";
 
 interface Doctor {
   id: string;
@@ -16,7 +17,7 @@ interface AppointmentCardProps {
   date: string;
   time: string;
   status: "upcoming" | "completed" | "canceled";
-  type: "video" | "in-person";
+  type: "video" | "in-person" | "online";
 }
 
 const AppointmentCard = ({
@@ -28,18 +29,18 @@ const AppointmentCard = ({
   type,
 }: AppointmentCardProps) => {
   const [currentStatus, setCurrentStatus] = useState(status);
-  
+
   const handleCancel = () => {
     // In a real app, this would make an API call
     setCurrentStatus("canceled");
     toast.success("Appointment canceled successfully.");
   };
-  
+
   const handleJoin = () => {
-    // In a real app, this would navigate to the video call page
+    // This function is now handled by VideoConsultationButton
     toast.info("Joining video consultation...");
   };
-  
+
   return (
     <div className="border rounded-lg overflow-hidden">
       <div className="bg-medical-light p-4 flex justify-between items-center">
@@ -53,20 +54,19 @@ const AppointmentCard = ({
           </div>
         </div>
         <div>
-          <span 
-            className={`text-sm px-2 py-1 rounded-full ${
-              currentStatus === "upcoming" 
-                ? "bg-blue-100 text-blue-800" 
+          <span
+            className={`text-sm px-2 py-1 rounded-full ${currentStatus === "upcoming"
+                ? "bg-blue-100 text-blue-800"
                 : currentStatus === "completed"
-                ? "bg-green-100 text-green-800"
-                : "bg-red-100 text-red-800"
-            }`}
+                  ? "bg-green-100 text-green-800"
+                  : "bg-red-100 text-red-800"
+              }`}
           >
             {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
           </span>
         </div>
       </div>
-      
+
       <div className="p-4">
         <div className="flex flex-col gap-2 mb-4">
           <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -79,22 +79,22 @@ const AppointmentCard = ({
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <VideoIcon className="h-4 w-4" />
-            <span>{type === "video" ? "Video Consultation" : "In-person Visit"}</span>
+            <span>{type === "video" ? "Video Consultation" : type === "online" ? "Online Consultation" : "In-person Visit"}</span>
           </div>
         </div>
-        
+
         {currentStatus === "upcoming" && (
           <div className="flex gap-2">
             {type === "video" && (
-              <Button 
-                onClick={handleJoin} 
-                className="bg-medical-primary hover:bg-medical-accent"
-              >
-                Join Call
-              </Button>
+              <VideoConsultationButton
+                appointmentId={id}
+                appointmentType="VIDEO_CALL"
+                appointmentStatus="APPROVED"
+                userRole="PATIENT"
+              />
             )}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={handleCancel}
             >
               Cancel

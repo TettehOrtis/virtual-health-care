@@ -29,12 +29,75 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ message: 'Appointment not found' });
         }
 
-        // Verify user has access to this appointment
-        if (user.role === 'PATIENT' && appointment.patientId !== user.userId) {
-            return res.status(403).json({ message: 'Access denied' });
+        // Debug: Log the user from the token
+        console.log('User from token:', { 
+            sub: user.sub, 
+            role: user.role,
+            //email: user.email
+        });
+
+        // Find the user in the database to get their internal ID
+        const dbUser = await prisma.user.findUnique({
+            where: { supabaseId: user.sub },
+            include: {
+                patient: true,
+                doctor: true
+            }
+        });
+
+        if (!dbUser) {
+            console.error('User not found in database for supabaseId:', user.sub);
+            return res.status(404).json({ message: 'User not found in database' });
         }
-        if (user.role === 'DOCTOR' && appointment.doctorId !== user.userId) {
-            return res.status(403).json({ message: 'Access denied' });
+
+        // Debug: Log the database user
+        console.log('Database user:', {
+            id: dbUser.id,
+            role: dbUser.role,
+            patientId: dbUser.patient?.id,
+            doctorId: dbUser.doctor?.id
+        });
+
+        // Debug: Log the appointment details
+        console.log('Appointment details:', {
+            id: appointment.id,
+            patientId: appointment.patientId,
+            doctorId: appointment.doctorId,
+            type: appointment.type,
+            status: appointment.status
+        });
+
+        // Verify user has access to this appointment using the internal database ID
+        if (user.role === 'PATIENT') {
+            const patientId = dbUser.patient?.id;
+            console.log('Checking patient access. Patient ID from DB:', patientId, 'Appointment patientId:', appointment.patientId);
+            
+            if (appointment.patientId !== patientId) {
+                console.error('Patient ID mismatch. Access denied.');
+                return res.status(403).json({ 
+                    message: 'Access denied',
+                    details: 'Patient ID does not match appointment',
+                    expectedPatientId: appointment.patientId,
+                    actualPatientId: patientId
+                });
+            }
+        } else if (user.role === 'DOCTOR') {
+            // For doctors, we need to use the doctorId from the user's doctor relation
+            const doctorId = dbUser.doctor?.id;
+            console.log('Checking doctor access. Doctor ID from DB:', doctorId, 'Appointment doctorId:', appointment.doctorId);
+            
+            if (appointment.doctorId !== doctorId) {
+                console.error('Doctor ID mismatch. Access denied.');
+                return res.status(403).json({ 
+                    message: 'Access denied',
+                    details: 'Doctor ID does not match appointment',
+                    expectedDoctorId: appointment.doctorId,
+                    actualDoctorId: doctorId
+                });
+            }
+        } else {
+            console.error('Invalid user role:', user.role);
+            return res.status(403).json({ message: 'Invalid user role' });
         }
 
         switch (req.method) {
@@ -76,7 +139,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 const meetingId = `medicloud-${appointmentId}-${Date.now()}`;
 
                 // Create Jitsi Meet URL
-                const meetingUrl = `https://meet.jitsi.si/${meetingId}`;
+                const meetingUrl = `https://meet.jit.si/${meetingId}`;
 
                 // Update appointment with meeting details
                 const updatedAppointment = await prisma.appointment.update({

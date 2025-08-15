@@ -49,14 +49,35 @@ export default function VideoConsultationButton({
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to generate meeting URL');
+                let errorMessage = 'Failed to generate meeting URL';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                    console.error('API Error:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        error: errorData,
+                        url: response.url
+                    });
+                } catch (e) {
+                    console.error('Error parsing error response:', e);
+                }
+                throw new Error(errorMessage);
             }
 
-            const { meetingUrl } = await response.json();
+            const data = await response.json();
+            console.log('Meeting data:', data);
+            
+            if (!data.meetingUrl) {
+                throw new Error('No meeting URL returned from server');
+            }
 
-            // Open Jitsi Meet in new tab
-            window.open(meetingUrl, '_blank', 'width=1200,height=800');
+            // Try to open Jitsi Meet in a new tab
+            const newWindow = window.open(data.meetingUrl, '_blank', 'width=1200,height=800');
+            // If the popup was blocked, redirect the current tab instead
+            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+                window.location.href = data.meetingUrl;
+            }
 
             toast.success('Opening video consultation...');
         } catch (error) {

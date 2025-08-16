@@ -72,12 +72,22 @@ export default function VideoConsultationButton({
                 throw new Error('No meeting URL returned from server');
             }
 
-            // Try to open Jitsi Meet in a new tab
-            const newWindow = window.open(data.meetingUrl, '_blank', 'width=1200,height=800');
-            // If the popup was blocked, redirect the current tab instead
-            if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-                window.location.href = data.meetingUrl;
-            }
+            // First, show a message that we're opening the meeting
+            toast.success('Opening video consultation in a new tab...');
+            
+            // Create a temporary anchor element to handle the click
+            const link = document.createElement('a');
+            link.href = data.meetingUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            
+            // Programmatically click the link to open in new tab
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Also try the standard window.open as a fallback
+            window.open(data.meetingUrl, '_blank', 'noopener,noreferrer');
 
             toast.success('Opening video consultation...');
         } catch (error) {

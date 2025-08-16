@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/middleware/auth";
+import { AppointmentNotificationService } from "@/lib/email/appointment-notifications";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     const { appointmentId } = req.query;
@@ -30,8 +31,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Debug: Log the user from the token
-        console.log('User from token:', { 
-            sub: user.sub, 
+        console.log('User from token:', {
+            sub: user.sub,
             role: user.role,
             //email: user.email
         });
@@ -71,10 +72,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (user.role === 'PATIENT') {
             const patientId = dbUser.patient?.id;
             console.log('Checking patient access. Patient ID from DB:', patientId, 'Appointment patientId:', appointment.patientId);
-            
+
             if (appointment.patientId !== patientId) {
                 console.error('Patient ID mismatch. Access denied.');
-                return res.status(403).json({ 
+                return res.status(403).json({
                     message: 'Access denied',
                     details: 'Patient ID does not match appointment',
                     expectedPatientId: appointment.patientId,
@@ -85,10 +86,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             // For doctors, we need to use the doctorId from the user's doctor relation
             const doctorId = dbUser.doctor?.id;
             console.log('Checking doctor access. Doctor ID from DB:', doctorId, 'Appointment doctorId:', appointment.doctorId);
-            
+
             if (appointment.doctorId !== doctorId) {
                 console.error('Doctor ID mismatch. Access denied.');
-                return res.status(403).json({ 
+                return res.status(403).json({
                     message: 'Access denied',
                     details: 'Doctor ID does not match appointment',
                     expectedDoctorId: appointment.doctorId,
@@ -154,26 +155,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     }
                 });
 
+                // Send email notifications with meeting URL to both patient and doctor
+                try {
+                    await AppointmentNotificationService.sendVideoMeetingNotification(updatedAppointment, meetingUrl);
+                    console.log('Meeting URL email notifications sent successfully');
+                } catch (error) {
+                    console.error('Failed to send meeting URL email notifications:', error);
+                    // Don't fail the meeting generation if email fails
+                }
+
                 return res.status(200).json({
+                    message: 'Meeting URL generated successfully',
                     meetingId,
                     meetingUrl,
-                    appointment: {
-                        id: updatedAppointment.id,
-                        date: updatedAppointment.date,
-                        time: updatedAppointment.time,
-                        type: updatedAppointment.type,
-                        status: updatedAppointment.status,
-                        notes: updatedAppointment.notes,
-                        patient: {
-                            id: updatedAppointment.patient.id,
-                            fullName: updatedAppointment.patient.user.fullName
-                        },
-                        doctor: {
-                            id: updatedAppointment.doctor.id,
-                            fullName: updatedAppointment.doctor.user.fullName,
-                            specialization: updatedAppointment.doctor.specialization
-                        }
-                    }
+                    appointment: updatedAppointment
                 });
 
             default:

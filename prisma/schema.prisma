@@ -20,8 +20,6 @@ model User {
   patient    Patient?
 
   // Chat relations
-  patientConversations Conversation[] @relation("PatientConversations")
-  doctorConversations  Conversation[] @relation("DoctorConversations")
   sentMessages         Message[]      @relation("SentMessages")
 
   @@index([supabaseId])
@@ -43,6 +41,7 @@ model Patient {
   MedicalRecord       MedicalRecord[]
   user                User            @relation(fields: [supabaseId], references: [supabaseId])
   prescriptions       Prescription[]
+  conversations       Conversation[]  @relation("PatientConversations")
 
   @@index([supabaseId])
 }
@@ -58,6 +57,7 @@ model Doctor {
   appointments   Appointment[]
   user           User           @relation(fields: [supabaseId], references: [supabaseId])
   prescriptions  Prescription[]
+  conversations  Conversation[] @relation("DoctorConversations")
 
   @@index([supabaseId])
 }
@@ -122,8 +122,8 @@ model Conversation {
   doctorId    String
   createdAt   DateTime @default(now())
   messages    Message[]
-  patient     User     @relation("PatientConversations", fields: [patientId], references: [id])
-  doctor      User     @relation("DoctorConversations", fields: [doctorId], references: [id])
+  patient     Patient  @relation("PatientConversations", fields: [patientId], references: [id])
+  doctor      Doctor   @relation("DoctorConversations", fields: [doctorId], references: [id])
 
   @@unique([patientId, doctorId])
 }

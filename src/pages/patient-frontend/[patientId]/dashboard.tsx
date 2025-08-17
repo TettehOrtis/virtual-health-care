@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, ActivitySquare, Pill, LucideIcon } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, ActivitySquare, Pill, LucideIcon, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
@@ -82,6 +82,11 @@ const PatientDashboard = () => {
             href: `/patient-frontend/${patientId}/medical-records`,
             icon: FileText,
             title: "Medical Records",
+        },
+        {
+            href: `/patient-frontend/${patientId}/messages`,
+            icon: MessageCircle,
+            title: "Messages",
         },
         {
             href: `/patient-frontend/${patientId}/profile`,

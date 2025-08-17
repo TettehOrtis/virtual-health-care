@@ -13,7 +13,8 @@ import {
   UserCircle,
   Bell,
   Users,
-  TrendingUp
+  TrendingUp,
+  MessageCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
@@ -202,6 +203,11 @@ const DoctorDashboard = () => {
       href: `/doctor-frontend/${doctorId}/prescriptions`,
       icon: FileText,
       title: "Prescriptions",
+    },
+    {
+      href: `/doctor-frontend/${doctorId}/messages`,
+      icon: MessageCircle,
+      title: "Messages",
     },
     {
       href: `/doctor-frontend/${doctorId}/profile`,

@@ -122,7 +122,7 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
         if (date) {
             const newDate = new Date(date);
             const now = new Date();
-            
+
             // Ensure new date is not in the past
             if (newDate < now) {
                 return res.status(400).json({
@@ -146,7 +146,9 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
             data: {
                 ...(status && { status }),
                 ...(notes && { notes }),
-                ...(date && { date: date ? new Date(date) : undefined })
+                ...(date && { date: date ? new Date(date) : undefined }),
+                // Set endTime when appointment is completed
+                ...(status === 'COMPLETED' && { endTime: new Date() })
             },
             include: {
                 patient: {
@@ -162,6 +164,35 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
                 }
             }
         });
+
+        // Automatically create conversation when appointment is completed
+        if (status === 'COMPLETED') {
+            try {
+                // Check if conversation already exists
+                const existingConversation = await prisma.conversation.findUnique({
+                    where: {
+                        patientId_doctorId: {
+                            patientId: updatedAppointment.patientId,
+                            doctorId: updatedAppointment.doctorId
+                        }
+                    }
+                });
+
+                // Create conversation if it doesn't exist
+                if (!existingConversation) {
+                    await prisma.conversation.create({
+                        data: {
+                            patientId: updatedAppointment.patientId,
+                            doctorId: updatedAppointment.doctorId
+                        }
+                    });
+                    console.log('Conversation created automatically for completed appointment');
+                }
+            } catch (conversationError) {
+                console.error('Error creating conversation:', conversationError);
+                // Don't fail the appointment update if conversation creation fails
+            }
+        }
 
         // Send notification if rescheduling (status changed to PENDING)
         // If date is provided, update the appointment and send reschedule notification
@@ -185,7 +216,6 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
             });
 
             await sendAppointmentRescheduledNotification({
-                patientEmail: updatedAppointment.patient.user.email,
                 doctorName: doctor.user.fullName,
                 oldDate: existingAppointment.date,
                 newDate: newDate,

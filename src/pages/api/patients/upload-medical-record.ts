@@ -47,7 +47,7 @@ export default async function handler(
     maxFiles: 1,
     maxFileSize: 10 * 1024 * 1024, // 10MB
     keepExtensions: true,
-    filter: (part) => {
+    filter: (part: any) => {
       return !!(
         part.name === 'file' &&
         (part.mimetype?.includes('application/pdf') ||

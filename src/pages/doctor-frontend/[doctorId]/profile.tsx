@@ -13,6 +13,7 @@ import {
   Bell,
   Users,
   Upload,
+  MessageCircle,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Label } from "@/components/ui/label";
@@ -68,12 +69,16 @@ const DoctorProfile = () => {
       title: "Prescriptions",
     },
     {
+      href: `/doctor-frontend/${doctorId}/messages`,
+      icon: MessageCircle,
+      title: "Messages",
+    },
+    {
       href: `/doctor-frontend/${doctorId}/profile`,
       icon: UserCircle,
       title: "My Profile",
     }
   ];
-
   useEffect(() => {
     // Fetch profile data from the API
     const fetchProfile = async () => {

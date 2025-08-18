@@ -93,11 +93,21 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
                 return res.status(400).json({ message: 'Message content is required' });
             }
 
+            // Resolve DB user id from supabaseId
+            const dbUser = await prisma.user.findUnique({
+                where: { supabaseId: req.user.supabaseId },
+                select: { id: true }
+            });
+
+            if (!dbUser) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+
             // Create new message using Prisma
             const message = await prisma.message.create({
                 data: {
                     conversationId,
-                    senderId: req.user.supabaseId, // Use supabaseId as it references User.id
+                    senderId: dbUser.id,
                     content: content.trim()
                 },
                 include: {

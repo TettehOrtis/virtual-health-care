@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Search, Download, FileText as FileIcon, Filter, ArrowLeft, Video, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Search, Download, FileText as FileIcon, Filter, ArrowLeft, Video, Users, MessageCircle } from "lucide-react";
 import VideoConsultationButton from "@/components/video/VideoConsultationButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -36,34 +36,44 @@ const PatientAppointments = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
 
-    // Define sidebar items with the patientId in the paths
-    const sidebarItems = [
-        {
-            href: `/patient-frontend/${patientId}/dashboard`,
-            icon: LayoutDashboard,
-            title: "Dashboard",
-        },
-        {
-            href: `/patient-frontend/${patientId}/appointments`,
-            icon: Calendar,
-            title: "Appointments",
-        },
-        {
-            href: `/patient-frontend/${patientId}/prescriptions`,
-            icon: FileText,
-            title: "Prescriptions",
-        },
-        {
-            href: `/patient-frontend/${patientId}/profile`,
-            icon: UserCircle,
-            title: "My Profile",
-        },
-        {
-            href: `/patient-frontend/${patientId}/billing`,
-            icon: CreditCard,
-            title: "Billing",
-        }
-    ];
+// Define sidebar items with the patientId in the paths
+const sidebarItems = [
+    {
+        href: `/patient-frontend/${patientId}/dashboard`,
+        icon: LayoutDashboard,
+        title: "Dashboard",
+    },
+    {
+        href: `/patient-frontend/${patientId}/appointments`,
+        icon: Calendar,
+        title: "Appointments",
+    },
+    {
+        href: `/patient-frontend/${patientId}/prescriptions`,
+        icon: FileText,
+        title: "Prescriptions",
+    },
+    {
+        href: `/patient-frontend/${patientId}/medical-records`,
+        icon: FileText,
+        title: "Medical Records",
+    },
+    {
+        href: `/patient-frontend/${patientId}/messages`,
+        icon: MessageCircle,
+        title: "Messages",
+    },
+    {
+        href: `/patient-frontend/${patientId}/profile`,
+        icon: UserCircle,
+        title: "My Profile",
+    },
+    {
+        href: `/patient-frontend/${patientId}/billing`,
+        icon: CreditCard,
+        title: "Billing",
+    }
+];
 
     useEffect(() => {
         const fetchAppointments = async () => {

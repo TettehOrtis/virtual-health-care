@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Plus } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Plus, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MedicalRecordUpload from "@/components/medical-records/MedicalRecordUpload";
@@ -33,7 +33,12 @@ const MedicalRecordsPage = () => {
       href: `/patient-frontend/${patientId}/medical-records`,
       icon: FileText,
       title: "Medical Records",
-    },
+  },
+  {
+      href: `/patient-frontend/${patientId}/messages`,
+      icon: MessageCircle,
+      title: "Messages",
+  },
     {
       href: `/patient-frontend/${patientId}/profile`,
       icon: UserCircle,

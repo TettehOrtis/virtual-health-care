@@ -225,9 +225,9 @@ export default function Messages() {
                     table: 'messages',
                     filter: `conversationId=eq.${selectedConversation.id}`,
                 },
-                (payload) => {
-                    const newMessage = payload.new as Message;
-                    setMessages(prev => [...prev, newMessage]);
+                () => {
+                    // Re-fetch to keep message shape consistent with API normalization
+                    fetchMessages();
                 }
             )
             .subscribe();

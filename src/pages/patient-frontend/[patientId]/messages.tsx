@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import MainLayout from '@/components/layout/mainlayout';
+import DashboardSidebar from '@/components/dashboard/dashboardsidebar';
 import { supabase } from '../../../lib/supabase';
 import { useAuth } from '../../../contexts/AuthContext';
 import { Button } from '../../../components/ui/button';
@@ -17,7 +19,18 @@ import {
     User,
     Phone,
     Mail,
-    Stethoscope
+    Stethoscope,
+    LayoutDashboard,
+    UserCircle,
+    CreditCard,
+    FileText,
+    Search,
+    Download,
+    FileText as FileIcon,
+    Filter,
+    ArrowLeft,
+    Video,
+    Users,
 } from 'lucide-react';
 
 interface Message {
@@ -80,6 +93,45 @@ export default function PatientMessages() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [subscription, setSubscription] = useState<any>(null);
 
+    // Define sidebar items with the patientId in the paths
+     const sidebarItems = [
+            {
+                href: `/patient-frontend/${patientId}/dashboard`,
+                icon: LayoutDashboard,
+                title: "Dashboard",
+            },
+            {
+                href: `/patient-frontend/${patientId}/appointments`,
+                icon: Calendar,
+                title: "Appointments",
+            },
+            {
+                href: `/patient-frontend/${patientId}/prescriptions`,
+                icon: FileText,
+                title: "Prescriptions",
+            },
+            {
+                href: `/patient-frontend/${patientId}/medical-records`,
+                icon: FileText,
+                title: "Medical Records",
+            },
+            {
+                href: `/patient-frontend/${patientId}/messages`,
+                icon: MessageCircle,
+                title: "Messages",
+            },
+            {
+                href: `/patient-frontend/${patientId}/profile`,
+                icon: UserCircle,
+                title: "My Profile",
+            },
+            {
+                href: `/patient-frontend/${patientId}/billing`,
+                icon: CreditCard,
+                title: "Billing",
+            }
+        ];
+
     // Fetch conversations on component mount
     useEffect(() => {
         if (user && getToken() && patientId) {
@@ -118,7 +170,6 @@ export default function PatientMessages() {
 
             if (response.ok) {
                 const data = await response.json();
-                // Filter conversations for this patient
                 const patientConversations = data.conversations?.filter(
                     (conv: Conversation) => conv.patientId === patientId
                 ) || [];
@@ -190,9 +241,9 @@ export default function PatientMessages() {
                     table: 'messages',
                     filter: `conversationId=eq.${selectedConversation.id}`,
                 },
-                (payload) => {
-                    const newMessage = payload.new as Message;
-                    setMessages(prev => [...prev, newMessage]);
+                () => {
+                    // Re-fetch to keep message shape consistent with API normalization
+                    fetchMessages();
                 }
             )
             .subscribe();
@@ -263,212 +314,207 @@ export default function PatientMessages() {
     }
 
     return (
-        <div className="container mx-auto p-4 max-w-7xl">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-8rem)]">
-                {/* Conversations List */}
-                <Card className="lg:col-span-1">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <MessageCircle className="h-5 w-5" />
-                            Doctor Conversations
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ScrollArea className="h-[calc(100vh-12rem)]">
-                            {conversations.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500">
-                                    <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                    <p>No conversations yet</p>
-                                    <p className="text-sm">Start by booking an appointment with a doctor</p>
-                                    <Button
-                                        onClick={() => router.push(`/patient-frontend/${patientId}/book-appointment`)}
-                                        className="mt-4"
-                                        size="sm"
-                                    >
-                                        Book Appointment
-                                    </Button>
-                                </div>
-                            ) : (
-                                <div className="space-y-2">
-                                    {conversations.map((conversation) => (
-                                        <div
-                                            key={conversation.id}
-                                            onClick={() => setSelectedConversation(conversation)}
-                                            className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedConversation?.id === conversation.id
-                                                    ? 'bg-blue-50 border border-blue-200'
-                                                    : 'hover:bg-gray-50 border border-transparent'
-                                                }`}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <Avatar className="h-10 w-10">
-                                                    <AvatarFallback>
-                                                        <Stethoscope className="h-5 w-5" />
-                                                    </AvatarFallback>
-                                                </Avatar>
-                                                <div className="flex-1 min-w-0">
-                                                    <p className="font-medium text-sm truncate">
-                                                        Dr. {getDoctorName(conversation)}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500 truncate">
-                                                        {conversation.messages.length > 0
-                                                            ? conversation.messages[conversation.messages.length - 1].content
-                                                            : 'No messages yet'}
-                                                    </p>
-                                                </div>
-                                                {conversation.messages.length > 0 && (
-                                                    <div className="text-xs text-gray-400">
-                                                        {formatTime(conversation.messages[conversation.messages.length - 1].createdAt)}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-
-                {/* Chat Area */}
-                <Card className="lg:col-span-2">
-                    {selectedConversation ? (
-                        <>
-                            <CardHeader className="border-b">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10">
-                                            <AvatarFallback>
-                                                <Stethoscope className="h-5 w-5" />
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <CardTitle className="text-lg">
-                                                Dr. {getDoctorName(selectedConversation)}
-                                            </CardTitle>
-                                            <div className="flex items-center gap-4 text-sm text-gray-500">
-                                                <span className="flex items-center gap-1">
-                                                    <Mail className="h-3 w-3" />
-                                                    {selectedConversation.doctor.email}
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {formatDate(selectedConversation.createdAt)}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Chat Status Badge */}
-                                    {chatStatus && (
-                                        <Badge
-                                            variant={chatStatus.active ? "default" : "destructive"}
-                                            className="flex items-center gap-1"
-                                        >
-                                            {chatStatus.active ? (
-                                                <>
-                                                    <Clock className="h-3 w-3" />
-                                                    {chatStatus.remainingDays} day(s) left
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <AlertCircle className="h-3 w-3" />
-                                                    Chat Closed
-                                                </>
-                                            )}
-                                        </Badge>
-                                    )}
-                                </div>
-                            </CardHeader>
-
-                            <CardContent className="p-0">
-                                {/* Messages Area */}
-                                <div className="h-[calc(100vh-16rem)] flex flex-col">
-                                    <ScrollArea className="flex-1 p-4">
-                                        {messages.length === 0 ? (
+        <MainLayout>
+            <div className="flex h-[calc(100vh-80px)]">
+                <DashboardSidebar items={sidebarItems} />
+                <div className="flex-1 overflow-auto bg-gray-50 p-8">
+                    <div className="max-w-7xl mx-auto">
+                        <div className="mb-8">
+                            <h1 className="text-3xl font-bold text-gray-900">Messages</h1>
+                            <p className="text-gray-600 mt-1">Chat with your doctors</p>
+                        </div>
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-12rem)]">
+                            <Card className="lg:col-span-1">
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <MessageCircle className="h-5 w-5" />
+                                        Conversations
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ScrollArea className="h-[calc(100vh-12rem)]">
+                                        {conversations.length === 0 ? (
                                             <div className="text-center py-8 text-gray-500">
                                                 <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                                                <p>No messages yet</p>
-                                                <p className="text-sm">Start the conversation!</p>
+                                                <p>No conversations yet</p>
+                                                <p className="text-sm">Start by booking an appointment with a doctor</p>
                                             </div>
                                         ) : (
-                                            <div className="space-y-4">
-                                                {messages.map((message) => (
+                                            <div className="space-y-2">
+                                                {conversations.map((conversation) => (
                                                     <div
-                                                        key={message.id}
-                                                        className={`flex ${message.sender.id === user.id ? 'justify-end' : 'justify-start'
+                                                        key={conversation.id}
+                                                        onClick={() => setSelectedConversation(conversation)}
+                                                        className={`p-3 rounded-lg cursor-pointer transition-colors ${selectedConversation?.id === conversation.id
+                                                            ? 'bg-blue-50 border border-blue-200'
+                                                            : 'hover:bg-gray-50 border border-transparent'
                                                             }`}
                                                     >
-                                                        <div
-                                                            className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender.id === user.id
-                                                                    ? 'bg-blue-600 text-white'
-                                                                    : 'bg-gray-100 text-gray-900'
-                                                                }`}
-                                                        >
-                                                            <p className="text-sm">{message.content}</p>
-                                                            <p
-                                                                className={`text-xs mt-1 ${message.sender.id === user.id
-                                                                        ? 'text-blue-100'
-                                                                        : 'text-gray-500'
-                                                                    }`}
-                                                            >
-                                                                {formatTime(message.createdAt)}
-                                                            </p>
+                                                        <div className="flex items-center gap-3">
+                                                            <Avatar className="h-10 w-10">
+                                                                <AvatarFallback>
+                                                                    {getDoctorName(conversation)?.charAt(0) || '?'}
+                                                                </AvatarFallback>
+                                                            </Avatar>
+                                                            <div className="flex-1 min-w-0">
+                                                                <p className="font-medium text-sm truncate">
+                                                                    Dr. {getDoctorName(conversation)}
+                                                                </p>
+                                                                <p className="text-xs text-gray-500 truncate">
+                                                                    {conversation.messages.length > 0
+                                                                        ? conversation.messages[conversation.messages.length - 1].content
+                                                                        : 'No messages yet'}
+                                                                </p>
+                                                            </div>
+                                                            {conversation.messages.length > 0 && (
+                                                                <div className="text-xs text-gray-400">
+                                                                    {formatTime(conversation.messages[conversation.messages.length - 1].createdAt)}
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
-                                                <div ref={messagesEndRef} />
                                             </div>
                                         )}
                                     </ScrollArea>
-
-                                    {/* Message Input */}
-                                    <div className="border-t p-4">
-                                        {chatStatus?.active ? (
-                                            <div className="flex gap-2">
-                                                <Input
-                                                    value={newMessage}
-                                                    onChange={(e) => setNewMessage(e.target.value)}
-                                                    onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                                    placeholder="Type your message..."
-                                                    disabled={sending}
-                                                    className="flex-1"
-                                                />
-                                                <Button
-                                                    onClick={sendMessage}
-                                                    disabled={!newMessage.trim() || sending}
-                                                    size="sm"
-                                                >
-                                                    <Send className="h-4 w-4" />
-                                                </Button>
+                                </CardContent>
+                            </Card>
+                            <Card className="lg:col-span-2">
+                                {selectedConversation ? (
+                                    <>
+                                        <CardHeader className="border-b">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10">
+                                                        <AvatarFallback>
+                                                            {getDoctorName(selectedConversation)?.charAt(0) || '?'}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div>
+                                                        <CardTitle className="text-lg">
+                                                            Dr. {getDoctorName(selectedConversation)}
+                                                        </CardTitle>
+                                                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                                                            <span className="flex items-center gap-1">
+                                                                <Mail className="h-3 w-3" />
+                                                                {selectedConversation.doctor.email}
+                                                            </span>
+                                                            <span className="flex items-center gap-1">
+                                                                <Calendar className="h-3 w-3" />
+                                                                {formatDate(selectedConversation.createdAt)}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {chatStatus && (
+                                                    <Badge
+                                                        variant={chatStatus.active ? "default" : "destructive"}
+                                                        className="flex items-center gap-1"
+                                                    >
+                                                        {chatStatus.active ? (
+                                                            <>
+                                                                <Clock className="h-3 w-3" />
+                                                                {chatStatus.remainingDays} day(s) left
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <AlertCircle className="h-3 w-3" />
+                                                                Chat Closed
+                                                            </>
+                                                        )}
+                                                    </Badge>
+                                                )}
                                             </div>
-                                        ) : (
-                                            <div className="text-center py-4 text-gray-500">
-                                                <AlertCircle className="h-5 w-5 mx-auto mb-2" />
-                                                <p className="text-sm">{chatStatus?.reason}</p>
-                                                <Button
-                                                    onClick={() => router.push(`/patient-frontend/${patientId}/book-appointment`)}
-                                                    className="mt-2"
-                                                    size="sm"
-                                                >
-                                                    Book Appointment
-                                                </Button>
+                                        </CardHeader>
+                                        <CardContent className="p-0">
+                                            <div className="h-[calc(100vh-16rem)] flex flex-col">
+                                                <ScrollArea className="flex-1 p-4">
+                                                    {messages.length === 0 ? (
+                                                        <div className="text-center py-8 text-gray-500">
+                                                            <MessageCircle className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                                            <p>No messages yet</p>
+                                                            <p className="text-sm">Start the conversation!</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="space-y-4">
+                                                            {messages.map((message) => (
+                                                                <div
+                                                                    key={message.id}
+                                                                    className={`flex ${message.sender.id === user.id ? 'justify-end' : 'justify-start'
+                                                                        }`}
+                                                                >
+                                                                    <div
+                                                                        className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${message.sender.id === user.id
+                                                                            ? 'bg-blue-600 text-white'
+                                                                            : 'bg-gray-100 text-gray-900'
+                                                                            }`}
+                                                                    >
+                                                                        <p className="text-sm">{message.content}</p>
+                                                                        <p
+                                                                            className={`text-xs mt-1 ${message.sender.id === user.id
+                                                                                ? 'text-blue-100'
+                                                                                : 'text-gray-500'
+                                                                                }`}
+                                                                        >
+                                                                            {formatTime(message.createdAt)}
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            <div ref={messagesEndRef} />
+                                                        </div>
+                                                    )}
+                                                </ScrollArea>
+                                                <div className="border-t p-4">
+                                                    {chatStatus?.active ? (
+                                                        <div className="flex gap-2">
+                                                            <Input
+                                                                value={newMessage}
+                                                                onChange={(e) => setNewMessage(e.target.value)}
+                                                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                                                                placeholder="Type your message..."
+                                                                disabled={sending}
+                                                                className="flex-1"
+                                                            />
+                                                            <Button
+                                                                onClick={sendMessage}
+                                                                disabled={!newMessage.trim() || sending}
+                                                                size="sm"
+                                                            >
+                                                                <Send className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-4 text-gray-500">
+                                                            <AlertCircle className="h-5 w-5 mx-auto mb-2" />
+                                                            <p className="text-sm">{chatStatus?.reason}</p>
+                                                            <Button
+                                                                onClick={() => router.push(`/patient-frontend/${patientId}/book-appointment`)}
+                                                                className="mt-2"
+                                                                size="sm"
+                                                            >
+                                                                Book Appointment
+                                                            </Button>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </>
-                    ) : (
-                        <CardContent className="flex items-center justify-center h-full">
-                            <div className="text-center text-gray-500">
-                                <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                                <p className="text-lg">Select a conversation to start chatting</p>
-                                <p className="text-sm">Choose from the list on the left</p>
-                            </div>
-                        </CardContent>
-                    )}
-                </Card>
+                                        </CardContent>
+                                    </>
+                                ) : (
+                                    <CardContent className="flex items-center justify-center h-full">
+                                        <div className="text-center text-gray-500">
+                                            <MessageCircle className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                                            <p className="text-lg">Select a conversation to start chatting</p>
+                                            <p className="text-sm">Choose from the list on the left</p>
+                                        </div>
+                                    </CardContent>
+                                )}
+                            </Card>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
+        </MainLayout>
     );
 }

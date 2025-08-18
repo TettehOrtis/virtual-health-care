@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, Users, Search, Filter, ArrowUpDown } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, Users, Search, Filter, ArrowUpDown,MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -37,31 +37,36 @@ const DoctorPatients = () => {
     // Define sidebar items with the doctorId in the paths
     const sidebarItems = [
         {
-            title: 'Dashboard',
-            href: `/doctor-frontend/${doctorId}/dashboard`,
-            icon: LayoutDashboard,
+          title: 'Dashboard',
+          href: `/doctor-frontend/${doctorId}/dashboard`,
+          icon: LayoutDashboard,
         },
         {
-            title: 'Appointments',
-            href: `/doctor-frontend/${doctorId}/appointments`,
-            icon: Calendar,
+          title: 'Appointments',
+          href: `/doctor-frontend/${doctorId}/appointments`,
+          icon: Calendar,
         },
         {
-            href: `/doctor-frontend/${doctorId}/patients`,
-            icon: Users,
-            title: "My Patients",
+          href: `/doctor-frontend/${doctorId}/patients`,
+          icon: Users,
+          title: "My Patients",
         },
         {
-            href: `/doctor-frontend/${doctorId}/prescriptions`,
-            icon: FileText,
-            title: "Prescriptions",
+          href: `/doctor-frontend/${doctorId}/prescriptions`,
+          icon: FileText,
+          title: "Prescriptions",
         },
         {
-            href: `/doctor-frontend/${doctorId}/profile`,
-            icon: UserCircle,
-            title: "My Profile",
+          href: `/doctor-frontend/${doctorId}/messages`,
+          icon: MessageCircle,
+          title: "Messages",
+        },
+        {
+          href: `/doctor-frontend/${doctorId}/profile`,
+          icon: UserCircle,
+          title: "My Profile",
         }
-    ];
+      ];
 
     useEffect(() => {
         const fetchPatients = async () => {

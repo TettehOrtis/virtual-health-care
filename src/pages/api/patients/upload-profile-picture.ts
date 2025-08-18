@@ -46,7 +46,7 @@ export default async function handler(
     maxFiles: 1,
     maxFileSize: 5 * 1024 * 1024, // 5MB
     keepExtensions: true,
-    filter: (part) => {
+    filter: (part: any) => {
       return !!(
         part.name === 'file' &&
         (part.mimetype?.includes('image/jpeg') ||

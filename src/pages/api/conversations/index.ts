@@ -121,7 +121,26 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
                 return res.status(403).json({ message: 'Invalid user role' });
             }
 
-            return res.status(200).json({ conversations });
+            // Normalize shape: flatten patient/doctor user fields for UI consumption
+            const normalized = (conversations || []).map((c: any) => ({
+                id: c.id,
+                patientId: c.patientId,
+                doctorId: c.doctorId,
+                createdAt: c.createdAt,
+                patient: {
+                    id: c.patient?.id,
+                    fullName: c.patient?.user?.fullName,
+                    email: c.patient?.user?.email,
+                },
+                doctor: {
+                    id: c.doctor?.id,
+                    fullName: c.doctor?.user?.fullName,
+                    email: c.doctor?.user?.email,
+                },
+                messages: c.messages,
+            }));
+
+            return res.status(200).json({ conversations: normalized });
         }
 
         if (req.method === 'POST') {

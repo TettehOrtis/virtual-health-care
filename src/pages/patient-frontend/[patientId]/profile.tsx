@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import MainLayout from "@/components/layout/mainlayout";
 import DashboardSidebar from "@/components/dashboard/dashboardsidebar";
-import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Calendar as CalendarIcon, Upload, Loader2 } from "lucide-react";
+import { LayoutDashboard, Calendar, FileText, UserCircle, CreditCard, Save, Mail, Phone, MapPin, Calendar as CalendarIcon, Upload, Loader2,MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +54,7 @@ const PatientProfile = () => {
         medicalHistory: ""
     });
 
+    // Define sidebar items with the patientId in the paths
     const sidebarItems = [
         {
             href: `/patient-frontend/${patientId}/dashboard`,
@@ -74,6 +75,11 @@ const PatientProfile = () => {
             href: `/patient-frontend/${patientId}/medical-records`,
             icon: FileText,
             title: "Medical Records",
+        },
+        {
+            href: `/patient-frontend/${patientId}/messages`,
+            icon: MessageCircle,
+            title: "Messages",
         },
         {
             href: `/patient-frontend/${patientId}/profile`,

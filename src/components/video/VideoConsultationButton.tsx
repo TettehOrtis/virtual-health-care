@@ -18,6 +18,25 @@ export default function VideoConsultationButton({
 }: VideoConsultationButtonProps) {
     const [isLoading, setIsLoading] = useState(false);
 
+    const openMeetingUrl = (url: string) => {
+        // First, show a message that we're opening the meeting
+        toast.success('Opening video consultation in a new tab...');
+        
+        // Create a temporary anchor element to handle the click
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        
+        // Programmatically click the link to open in new tab
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        // Also try the standard window.open as a fallback
+        window.open(url, '_blank', 'noopener,noreferrer');
+    };
+
     const handleJoinMeeting = async () => {
         if (appointmentType !== 'VIDEO_CALL') {
             toast.error('This is not a video consultation appointment');
@@ -39,7 +58,25 @@ export default function VideoConsultationButton({
                 return;
             }
 
-            // Generate or get meeting URL
+            // First, try to get the existing meeting URL
+            const getResponse = await fetch(`/api/appointments/${appointmentId}/meeting`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (getResponse.ok) {
+                const data = await getResponse.json();
+                if (data.meetingUrl) {
+                    // If we have a meeting URL, just open it
+                    openMeetingUrl(data.meetingUrl);
+                    return;
+                }
+            }
+
+            // If no meeting URL exists, generate a new one
             const response = await fetch(`/api/appointments/${appointmentId}/meeting`, {
                 method: 'POST',
                 headers: {
@@ -72,24 +109,8 @@ export default function VideoConsultationButton({
                 throw new Error('No meeting URL returned from server');
             }
 
-            // First, show a message that we're opening the meeting
-            toast.success('Opening video consultation in a new tab...');
-            
-            // Create a temporary anchor element to handle the click
-            const link = document.createElement('a');
-            link.href = data.meetingUrl;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            
-            // Programmatically click the link to open in new tab
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Also try the standard window.open as a fallback
-            window.open(data.meetingUrl, '_blank', 'noopener,noreferrer');
-
-            toast.success('Opening video consultation...');
+            // Open the new meeting URL
+            openMeetingUrl(data.meetingUrl);
         } catch (error) {
             console.error('Error joining meeting:', error);
             toast.error(error instanceof Error ? error.message : 'Failed to join video consultation');

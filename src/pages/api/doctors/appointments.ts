@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { sendAppointmentRescheduledNotification } from "@/lib/notifications";
+import { AppointmentNotificationService } from "@/lib/email/appointment-notifications";
 
 // Helper function to verify token and get supabase user id from `sub`
 const verifyToken = (req: NextApiRequest): { sub: string } => {
@@ -140,7 +141,7 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
             }
         }
 
-        // Get the updated appointment with patient details
+        // Get the updated appointment with patient and doctor details
         const updatedAppointment = await prisma.appointment.update({
             where: { id },
             data: {
@@ -161,9 +162,54 @@ const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
                             }
                         }
                     }
+                },
+                doctor: {
+                    select: {
+                        id: true,
+                        user: {
+                            select: {
+                                email: true,
+                                fullName: true
+                            }
+                        }
+                    }
                 }
             }
         });
+
+        // If appointment is approved and it's a video call, generate meeting link and send email
+        if (status === 'APPROVED' && existingAppointment.type === 'VIDEO_CALL') {
+            try {
+                // Call the existing meeting endpoint to generate the meeting link
+                const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/appointments/${id}/meeting`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': req.headers.authorization || ''
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    console.error('Failed to generate meeting link:', errorData);
+                    // Don't fail the request if meeting link generation fails
+                } else {
+                    const { meetingUrl } = await response.json();
+                    console.log('Meeting URL generated successfully:', meetingUrl);
+                    
+                    // Update the appointment with the new meeting URL
+                    await prisma.appointment.update({
+                        where: { id },
+                        data: {
+                            meetingUrl
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error generating meeting link:', error);
+                // Don't fail the request if meeting link generation fails
+            }
+        }
 
         // Automatically create conversation when appointment is completed
         if (status === 'COMPLETED') {

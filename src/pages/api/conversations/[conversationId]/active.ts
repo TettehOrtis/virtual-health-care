@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { supabaseServer } from '../../../../lib/supabaseServer';
+import { prisma } from '../../../../lib/prisma';
 import jwt from 'jsonwebtoken';
 
 interface AuthenticatedRequest extends NextApiRequest {
@@ -41,33 +41,49 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             return res.status(400).json({ message: 'Conversation ID is required' });
         }
 
-        // Check if user has access to this conversation
-        const { data: conversation, error: conversationError } = await supabaseServer
-            .from('conversations')
-            .select('patientId, doctorId')
-            .eq('id', conversationId)
-            .single();
+        // Find conversation and verify access using Prisma
+        const conversation = await prisma.conversation.findUnique({
+            where: { id: conversationId },
+            select: { patientId: true, doctorId: true }
+        });
 
-        if (conversationError || !conversation) {
+        if (!conversation) {
             return res.status(404).json({ message: 'Conversation not found' });
         }
 
-        if (conversation.patientId !== req.user.id && conversation.doctorId !== req.user.id) {
+        // Resolve current user's patient/doctor record id from supabaseId
+        let userRecordId: string | null = null;
+        if (req.user.role === 'PATIENT') {
+            const patient = await prisma.patient.findUnique({
+                where: { supabaseId: req.user.supabaseId },
+                select: { id: true }
+            });
+            userRecordId = patient?.id || null;
+        } else if (req.user.role === 'DOCTOR') {
+            const doctor = await prisma.doctor.findUnique({
+                where: { supabaseId: req.user.supabaseId },
+                select: { id: true }
+            });
+            userRecordId = doctor?.id || null;
+        }
+
+        if (!userRecordId || (conversation.patientId !== userRecordId && conversation.doctorId !== userRecordId)) {
             return res.status(403).json({ message: 'Access denied' });
         }
 
-        // Get the most recent appointment between this patient and doctor
-        const { data: latestAppointment, error: appointmentError } = await supabaseServer
-            .from('appointments')
-            .select('endTime, status')
-            .eq('patientId', conversation.patientId)
-            .eq('doctorId', conversation.doctorId)
-            .eq('status', 'COMPLETED')
-            .order('endTime', { ascending: false })
-            .limit(1)
-            .single();
+        // Get the most recent completed appointment between this patient and doctor
+        const latestAppointment = await prisma.appointment.findFirst({
+            where: {
+                patientId: conversation.patientId,
+                doctorId: conversation.doctorId,
+                status: 'COMPLETED',
+                NOT: { endTime: null }
+            },
+            orderBy: { endTime: 'desc' },
+            select: { endTime: true }
+        });
 
-        if (appointmentError || !latestAppointment || !latestAppointment.endTime) {
+        if (!latestAppointment || !latestAppointment.endTime) {
             return res.status(200).json({
                 active: false,
                 reason: 'No completed appointments found. Please book an appointment first.'

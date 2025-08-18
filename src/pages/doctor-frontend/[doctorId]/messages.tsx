@@ -118,6 +118,7 @@ export default function Messages() {
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [subscription, setSubscription] = useState<any>(null);
+    const isChatActive = chatStatus?.active !== false;
 
     // Fetch conversations on component mount
     useEffect(() => {
@@ -136,7 +137,7 @@ export default function Messages() {
 
         return () => {
             if (subscription) {
-                subscription.unsubscribe();
+                supabase.removeChannel(subscription);
             }
         };
     }, [selectedConversation]);
@@ -222,7 +223,7 @@ export default function Messages() {
                 {
                     event: 'INSERT',
                     schema: 'public',
-                    table: 'messages',
+                    table: 'Message',
                     filter: `conversationId=eq.${selectedConversation.id}`,
                 },
                 () => {
@@ -251,7 +252,8 @@ export default function Messages() {
 
             if (response.ok) {
                 setNewMessage('');
-                // Message will be added via real-time subscription
+                // Optimistically fetch in case realtime delivery is delayed
+                fetchMessages();
             } else {
                 console.error('Failed to send message');
             }
@@ -466,25 +468,24 @@ export default function Messages() {
 
                                                 {/* Message Input */}
                                                 <div className="border-t p-4">
-                                                    {chatStatus?.active ? (
-                                                        <div className="flex gap-2">
-                                                            <Input
-                                                                value={newMessage}
-                                                                onChange={(e) => setNewMessage(e.target.value)}
-                                                                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                                                                placeholder="Type your message..."
-                                                                disabled={sending}
-                                                                className="flex-1"
-                                                            />
-                                                            <Button
-                                                                onClick={sendMessage}
-                                                                disabled={!newMessage.trim() || sending}
-                                                                size="sm"
-                                                            >
-                                                                <Send className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
-                                                    ) : (
+                                                    <div className="flex gap-2">
+                                                        <Input
+                                                            value={newMessage}
+                                                            onChange={(e) => setNewMessage(e.target.value)}
+                                                            onKeyPress={(e) => e.key === 'Enter' && isChatActive && sendMessage()}
+                                                            placeholder="Type your message..."
+                                                            disabled={!isChatActive || sending}
+                                                            className="flex-1"
+                                                        />
+                                                        <Button
+                                                            onClick={sendMessage}
+                                                            disabled={!newMessage.trim() || sending || !isChatActive}
+                                                            size="sm"
+                                                        >
+                                                            <Send className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                    {!isChatActive && (
                                                         <div className="text-center py-4 text-gray-500">
                                                             <AlertCircle className="h-5 w-5 mx-auto mb-2" />
                                                             <p className="text-sm">{chatStatus?.reason}</p>

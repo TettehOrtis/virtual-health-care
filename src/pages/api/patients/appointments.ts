@@ -10,18 +10,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Extract authorization token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ message: "No token provided" }); 
+        return res.status(401).json({ message: "No token provided" });
     }
 
     const token = authHeader.split(' ')[1];
 
     try {
-        // Verify token and get userId
-        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+        // Verify token and get supabase user id from `sub`
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { sub: string };
 
-        // Get patient information
+        // Get patient information by Supabase ID
         const patient = await prisma.patient.findFirst({
-            where: { supabaseId: decoded.userId } 
+            where: { supabaseId: decoded.sub }
         });
 
         if (!patient) {
@@ -104,7 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     doctorName: appointment.doctor.user.fullName,
                     type: 'BOOKING'
                 };
-                
+
                 await AppointmentNotificationService.sendNotification(notificationData);
             } catch (error) {
                 console.error('Failed to send appointment notification:', error);

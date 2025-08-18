@@ -127,17 +127,19 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
                 patientId: c.patientId,
                 doctorId: c.doctorId,
                 createdAt: c.createdAt,
-                patient: {
-                    id: c.patient?.id,
-                    fullName: c.patient?.user?.fullName,
-                    email: c.patient?.user?.email,
-                },
+                // Flatten doctor data
                 doctor: {
                     id: c.doctor?.id,
-                    fullName: c.doctor?.user?.fullName,
-                    email: c.doctor?.user?.email,
+                    fullName: c.doctor?.user?.fullName || 'Unknown Doctor',
+                    email: c.doctor?.user?.email || '',
                 },
-                messages: c.messages,
+                // Flatten patient data
+                patient: {
+                    id: c.patient?.id,
+                    fullName: c.patient?.user?.fullName || 'Unknown Patient',
+                    email: c.patient?.user?.email || '',
+                },
+                messages: c.messages || [],
             }));
 
             return res.status(200).json({ conversations: normalized });
@@ -182,18 +184,99 @@ export default async function handler(req: AuthenticatedRequest, res: NextApiRes
             });
 
             if (existingConversation) {
-                return res.status(200).json({ conversation: existingConversation });
+                // Fetch the full conversation with related data
+                const fullConversation = await prisma.conversation.findUnique({
+                    where: { id: existingConversation.id },
+                    include: {
+                        patient: {
+                            include: {
+                                user: {
+                                    select: { id: true, fullName: true, email: true }
+                                }
+                            }
+                        },
+                        doctor: {
+                            include: {
+                                user: {
+                                    select: { id: true, fullName: true, email: true }
+                                }
+                            }
+                        },
+                        messages: true
+                    }
+                });
+
+                if (!fullConversation) {
+                    return res.status(404).json({ message: 'Conversation not found' });
+                }
+
+                // Normalize the response
+                const normalizedConversation = {
+                    id: fullConversation.id,
+                    patientId: fullConversation.patientId,
+                    doctorId: fullConversation.doctorId,
+                    createdAt: fullConversation.createdAt,
+                    doctor: {
+                        id: fullConversation.doctor?.id,
+                        fullName: fullConversation.doctor?.user?.fullName || 'Unknown Doctor',
+                        email: fullConversation.doctor?.user?.email || '',
+                    },
+                    patient: {
+                        id: fullConversation.patient?.id,
+                        fullName: fullConversation.patient?.user?.fullName || 'Unknown Patient',
+                        email: fullConversation.patient?.user?.email || '',
+                    },
+                    messages: fullConversation.messages || []
+                };
+
+                return res.status(200).json({ conversation: normalizedConversation });
             }
 
-            // Create new conversation
+            // Create new conversation and include related data
             const conversation = await prisma.conversation.create({
                 data: {
                     patientId,
                     doctorId
+                },
+                include: {
+                    patient: {
+                        include: {
+                            user: {
+                                select: { id: true, fullName: true, email: true }
+                            }
+                        }
+                    },
+                    doctor: {
+                        include: {
+                            user: {
+                                select: { id: true, fullName: true, email: true }
+                            }
+                        }
+                    },
+                    messages: true
                 }
             });
 
-            return res.status(201).json({ conversation });
+            // Normalize the response to match the frontend expectations
+            const normalizedConversation = {
+                id: conversation.id,
+                patientId: conversation.patientId,
+                doctorId: conversation.doctorId,
+                createdAt: conversation.createdAt,
+                doctor: {
+                    id: conversation.doctor?.id,
+                    fullName: conversation.doctor?.user?.fullName || 'Unknown Doctor',
+                    email: conversation.doctor?.user?.email || '',
+                },
+                patient: {
+                    id: conversation.patient?.id,
+                    fullName: conversation.patient?.user?.fullName || 'Unknown Patient',
+                    email: conversation.patient?.user?.email || '',
+                },
+                messages: conversation.messages || []
+            };
+
+            return res.status(201).json({ conversation: normalizedConversation });
         }
 
     } catch (error) {

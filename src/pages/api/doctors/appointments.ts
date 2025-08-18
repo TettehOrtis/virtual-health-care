@@ -3,18 +3,18 @@ import { prisma } from "@/lib/prisma";
 import jwt from "jsonwebtoken";
 import { sendAppointmentRescheduledNotification } from "@/lib/notifications";
 
-// Helper function to verify token and get userId
-const verifyToken = (req: NextApiRequest): { userId: string } => {
+// Helper function to verify token and get supabase user id from `sub`
+const verifyToken = (req: NextApiRequest): { sub: string } => {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         throw new Error("No token provided");
     }
 
     const token = authHeader.split(' ')[1];
-    return jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
+    return jwt.verify(token, process.env.JWT_SECRET!) as { sub: string };
 };
 
-// Helper function to get doctor by userId
+// Helper function to get doctor by supabaseId
 const getDoctorByUserId = async (supabaseId: string) => {
     const doctor = await prisma.doctor.findFirst({
         where: { supabaseId },
@@ -35,8 +35,8 @@ const getDoctorByUserId = async (supabaseId: string) => {
 // CRUD Functions
 const getAppointments = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
-        const { userId } = verifyToken(req);
-        const doctor = await getDoctorByUserId(userId);
+        const { sub } = verifyToken(req);
+        const doctor = await getDoctorByUserId(sub);
 
         const appointments = await prisma.appointment.findMany({
             where: {
@@ -81,8 +81,8 @@ const createAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
 
 const updateAppointment = async (req: NextApiRequest, res: NextApiResponse) => {
     try {
-        const { userId } = verifyToken(req);
-        const doctor = await getDoctorByUserId(userId);
+        const { sub } = verifyToken(req);
+        const doctor = await getDoctorByUserId(sub);
         const { id, status, notes, date } = req.body;
 
         if (!id) {

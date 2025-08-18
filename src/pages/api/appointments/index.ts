@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { verifyToken } from "@/middleware/auth";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    // Verify token and get user
+    // Verify token and get decoded fields (sub = supabase user id)
     const user = verifyToken(req);
     console.log("Authenticated User:", user);
 
@@ -16,26 +16,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             try {
                 let appointments;
                 if (user.role === "PATIENT") {
+                    // Resolve patient by supabase user id
+                    const patient = await prisma.patient.findFirst({ where: { supabaseId: user.sub } });
+                    if (!patient) {
+                        return res.status(404).json({ message: "Patient profile not found" });
+                    }
                     // Fetch appointments for the patient
                     appointments = await prisma.appointment.findMany({
-                        where: { patientId: user.userId },
+                        where: { patientId: patient.id },
                         include: {
                             doctor: {
-                                include: {
-                                    user: true, // Include the associated User record for the doctor
-                                },
+                                include: { user: true },
                             },
                         },
                     });
                 } else if (user.role === "DOCTOR") {
+                    // Resolve doctor by supabase user id
+                    const doctor = await prisma.doctor.findFirst({ where: { supabaseId: user.sub } });
+                    if (!doctor) {
+                        return res.status(404).json({ message: "Doctor profile not found" });
+                    }
                     // Fetch appointments for the doctor
                     appointments = await prisma.appointment.findMany({
-                        where: { doctorId: user.userId },
+                        where: { doctorId: doctor.id },
                         include: {
                             patient: {
-                                include: {
-                                    user: true, // Include the associated User record for the patient
-                                },
+                                include: { user: true },
                             },
                         },
                     });
@@ -80,25 +86,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
                 console.log("Doctor record from database:", doctor);
 
+                // Resolve patient id from token
+                const patient = await prisma.patient.findFirst({ where: { supabaseId: user.sub } });
+                if (!patient) {
+                    return res.status(404).json({ message: "Patient profile not found" });
+                }
+
                 // Create the appointment
                 const appointment = await prisma.appointment.create({
                     data: {
-                        patientId: user.userId,
+                        patientId: patient.id,
                         doctorId,
                         date: new Date(date),
                         status,
                     },
                     include: {
-                        patient: {
-                            include: {
-                                user: true, // Include the associated User record for the patient
-                            },
-                        },
-                        doctor: {
-                            include: {
-                                user: true, // Include the associated User record for the doctor
-                            },
-                        },
+                        patient: { include: { user: true } },
+                        doctor: { include: { user: true } },
                     },
                 });
 
@@ -141,7 +145,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     return res.status(404).json({ message: "Appointment not found" });
                 }
 
-                if (appointment.doctorId !== user.userId) {
+                // Resolve doctor id from token
+                const doctor = await prisma.doctor.findFirst({ where: { supabaseId: user.sub } });
+                if (!doctor) {
+                    return res.status(404).json({ message: "Doctor profile not found" });
+                }
+
+                if (appointment.doctorId !== doctor.id) {
                     return res.status(403).json({ message: "Access Denied: You do not own this appointment" });
                 }
 

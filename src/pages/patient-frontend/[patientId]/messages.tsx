@@ -94,43 +94,43 @@ export default function PatientMessages() {
     const [subscription, setSubscription] = useState<any>(null);
 
     // Define sidebar items with the patientId in the paths
-     const sidebarItems = [
-            {
-                href: `/patient-frontend/${patientId}/dashboard`,
-                icon: LayoutDashboard,
-                title: "Dashboard",
-            },
-            {
-                href: `/patient-frontend/${patientId}/appointments`,
-                icon: Calendar,
-                title: "Appointments",
-            },
-            {
-                href: `/patient-frontend/${patientId}/prescriptions`,
-                icon: FileText,
-                title: "Prescriptions",
-            },
-            {
-                href: `/patient-frontend/${patientId}/medical-records`,
-                icon: FileText,
-                title: "Medical Records",
-            },
-            {
-                href: `/patient-frontend/${patientId}/messages`,
-                icon: MessageCircle,
-                title: "Messages",
-            },
-            {
-                href: `/patient-frontend/${patientId}/profile`,
-                icon: UserCircle,
-                title: "My Profile",
-            },
-            {
-                href: `/patient-frontend/${patientId}/billing`,
-                icon: CreditCard,
-                title: "Billing",
-            }
-        ];
+    const sidebarItems = [
+        {
+            href: `/patient-frontend/${patientId}/dashboard`,
+            icon: LayoutDashboard,
+            title: "Dashboard",
+        },
+        {
+            href: `/patient-frontend/${patientId}/appointments`,
+            icon: Calendar,
+            title: "Appointments",
+        },
+        {
+            href: `/patient-frontend/${patientId}/prescriptions`,
+            icon: FileText,
+            title: "Prescriptions",
+        },
+        {
+            href: `/patient-frontend/${patientId}/medical-records`,
+            icon: FileText,
+            title: "Medical Records",
+        },
+        {
+            href: `/patient-frontend/${patientId}/messages`,
+            icon: MessageCircle,
+            title: "Messages",
+        },
+        {
+            href: `/patient-frontend/${patientId}/profile`,
+            icon: UserCircle,
+            title: "My Profile",
+        },
+        {
+            href: `/patient-frontend/${patientId}/billing`,
+            icon: CreditCard,
+            title: "Billing",
+        }
+    ];
 
     // Fetch conversations on component mount
     useEffect(() => {
@@ -170,8 +170,9 @@ export default function PatientMessages() {
 
             if (response.ok) {
                 const data = await response.json();
+                // First, filter conversations where the current user is the patient
                 const patientConversations = data.conversations?.filter(
-                    (conv: Conversation) => conv.patientId === patientId
+                    (conv: any) => conv.patientId === patientId
                 ) || [];
                 setConversations(patientConversations);
             } else {
@@ -293,9 +294,7 @@ export default function PatientMessages() {
         return new Date(dateString).toLocaleDateString();
     };
 
-    const getDoctorName = (conversation: Conversation) => {
-        return conversation.doctor.fullName;
-    };
+    const getDoctorName = (conversation: Conversation) => conversation?.doctor?.fullName ?? 'Unknown Doctor';
 
     if (loading) {
         return (

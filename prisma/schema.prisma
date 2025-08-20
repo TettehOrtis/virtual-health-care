@@ -2,6 +2,29 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum Status {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum AppointmentType {
+  IN_PERSON
+  ONLINE
+  VIDEO_CALL
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELED
+}
+
+// Removed unused enums and models related to reports, transactions, documents, pharmacies, and hospitals
+
 datasource db {
   provider  = "postgresql"
   url       = env("DATABASE_URL")
@@ -21,6 +44,7 @@ model User {
 
   // Chat relations
   sentMessages         Message[]      @relation("SentMessages")
+  notifications        Notification[]
 
   @@index([supabaseId])
   @@index([email])
@@ -137,23 +161,47 @@ model Message {
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User        @relation("SentMessages", fields: [senderId], references: [id])
 }
+model Hospital {
+  id        String    @id @default(uuid())
+  name      String
+  location  String
+  services  String?
+  licenseNo String
+  status    Status    @default(PENDING)
+  createdAt DateTime  @default(now())
+}
+
+// Removed Transaction model as it's not used by the current app
+
+// Removed unused enum ReportTarget
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  type      NotificationType
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+
 
 enum Role {
   PATIENT
   DOCTOR
   ADMIN
+  PHARMACIST
+  HOSPITAL_ADMIN
 }
 
-enum AppointmentStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  COMPLETED
-  CANCELED
+enum NotificationType {
+  APPOINTMENT
+  PRESCRIPTION
+  MESSAGE
+  SYSTEM
 }
 
-enum AppointmentType {
-  IN_PERSON
-  ONLINE
-  VIDEO_CALL
-}
+// Removed unused enum ReportStatus

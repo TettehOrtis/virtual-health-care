@@ -88,7 +88,10 @@ const AuthForm = () => {
 
           toast.success("Login successful!");
 
-          if (data.user && data.user.role === "PATIENT") {
+          if (data.redirectUrl) {
+            // Prefer server-provided redirect
+            router.push(data.redirectUrl);
+          } else if (data.user && data.user.role === "PATIENT") {
             // If patientId is directly in the response
             const patientId = data.patientId || (data.user ? data.user.id : null);
             if (patientId) {
@@ -108,10 +111,6 @@ const AuthForm = () => {
               console.error("Missing doctor ID in the response", data);
               toast.error("Login successful but couldn't load your dashboard");
             }
-          } else if (data.redirectUrl) {
-            // Use the redirect URL if provided
-            console.log(`Using provided redirect URL: ${data.redirectUrl}`);
-            router.push(data.redirectUrl);
           } else {
             console.error("Could not determine user role or find redirect information", data);
             toast.error("Login successful but couldn't load your dashboard");

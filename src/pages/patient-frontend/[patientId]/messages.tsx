@@ -295,16 +295,6 @@ export default function PatientMessages() {
 
     const getDoctorName = (conversation: Conversation) => conversation?.doctor?.fullName ?? 'Unknown Doctor';
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading conversations...</p>
-                </div>
-            </div>
-        );
-    }
 
     if (!user) {
         router.push('/login');
@@ -313,6 +303,7 @@ export default function PatientMessages() {
 
     return (
         <MainLayout>
+            
             <div className="flex h-[calc(100vh-80px)]">
                 <DashboardSidebar items={sidebarItems} />
                 <div className="flex-1 overflow-auto bg-gray-50 p-8">

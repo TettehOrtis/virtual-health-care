@@ -190,17 +190,7 @@ const sidebarItems = [
     };
 
     // Display loading state
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center h-screen bg-gray-50">
-                <div className="bg-white p-8 rounded-lg shadow-md text-center">
-                    <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-                    <p className="text-gray-700 font-medium">Loading appointments...</p>
-                </div>
-            </div>
-        );
-    }
-
+      
     return (
         <MainLayout>
             <div className="flex h-[calc(100vh-80px)]">

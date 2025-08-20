@@ -80,6 +80,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       process.env.JWT_SECRET!
     );
 
+    // Compute redirect URL per role
+    const redirectUrl = dbUser.role === "DOCTOR"
+      ? `/doctor-frontend/${doctorId}/dashboard`
+      : dbUser.role === "PATIENT"
+        ? `/patient-frontend/${patientId}/dashboard`
+        : "/Admin/adminDashboard";
+
     // Return success with redirect and user info
     return res.status(200).json({
       token,
@@ -90,10 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email: user.email,
         role: dbUser.role,
       },
-      redirectUrl:
-        dbUser.role === "DOCTOR"
-          ? `/doctor-frontend/${doctorId}/dashboard`
-          : `/patient-frontend/${patientId}/dashboard`,
+      redirectUrl,
     });
   } catch (err) {
     return res.status(500).json({ message: "Something went wrong", error: String(err) });

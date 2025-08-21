@@ -14,11 +14,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(403).json({ message: 'Access denied' })
         }
 
-        const [doctors, patients, appointments, completedAppointments] = await Promise.all([
+        const [
+            doctors,
+            patients,
+            appointments,
+            completedAppointments,
+            hospitals,
+            pendingHospitalApprovals,
+            pendingDoctorApprovals
+        ] = await Promise.all([
             prisma.doctor.count(),
             prisma.patient.count(),
             prisma.appointment.count(),
             prisma.appointment.count({ where: { status: 'COMPLETED' } }),
+            prisma.hospital.count(),
+            prisma.hospital.count({ where: { status: 'PENDING' } }),
+            prisma.doctor.count({ where: { status: 'PENDING' } }),
         ])
 
         return res.status(200).json({
@@ -26,6 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             patients,
             appointments,
             completedAppointments,
+            hospitals,
+            pendingHospitalApprovals,
+            pendingDoctorApprovals,
         })
     } catch (error) {
         console.error('Failed to fetch stats:', error)

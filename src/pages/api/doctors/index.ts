@@ -5,11 +5,12 @@ export default async function handler(
     req: NextApiRequest,
     res: NextApiResponse
 ) {
-    // GET request to fetch all doctors
+    // GET request to fetch all approved doctors
     if (req.method === "GET") {
         try {
-            // Get all doctors with their user info
+            // Get only approved doctors with their user info
             const doctors = await prisma.doctor.findMany({
+                where: { status: 'APPROVED' }, // Only show approved doctors
                 select: {
                     id: true,
                     specialization: true,

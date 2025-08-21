@@ -76,14 +76,31 @@ model Doctor {
   specialization String
   phone          String
   address        String
+  status         Status         @default(PENDING) // Added status field
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   appointments   Appointment[]
   user           User           @relation(fields: [supabaseId], references: [supabaseId])
   prescriptions  Prescription[]
   conversations  Conversation[] @relation("DoctorConversations")
+  documents      DoctorDocument[] // Relation to DoctorDocument
 
   @@index([supabaseId])
+}
+
+model DoctorDocument {
+  id          String   @id @default(uuid())
+  doctorId    String
+  title       String
+  fileUrl     String
+  fileType    String
+  fileName    String
+  size        Int
+  status      Status   @default(PENDING) // Document approval status
+  uploadedAt  DateTime @default(now())
+  doctor      Doctor   @relation(fields: [doctorId], references: [id])
+
+  @@index([doctorId])
 }
 
 model Appointment {

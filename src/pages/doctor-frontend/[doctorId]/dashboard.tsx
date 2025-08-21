@@ -205,6 +205,11 @@ const DoctorDashboard = () => {
       title: "Prescriptions",
     },
     {
+      href: `/doctor-frontend/${doctorId}/documents`,
+      icon: FileText,
+      title: "Documents",
+    },
+    {
       href: `/doctor-frontend/${doctorId}/messages`,
       icon: MessageCircle,
       title: "Messages",

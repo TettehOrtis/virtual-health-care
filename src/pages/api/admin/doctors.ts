@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { prisma } from '@/lib/prisma'
 import { verifyToken } from '@/middleware/auth'
+import { supabase } from '@/lib/supabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method !== 'GET') {
@@ -18,6 +19,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             orderBy: { createdAt: 'desc' },
             include: {
                 user: { select: { fullName: true, email: true } },
+                documents: { orderBy: { uploadedAt: 'desc' } },
             },
         })
 
@@ -36,12 +38,30 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     specialization: doctor.specialization,
                     phone: doctor.phone,
                     address: doctor.address,
+                    status: doctor.status,
                     createdAt: doctor.createdAt,
                     updatedAt: doctor.updatedAt,
                     stats: {
                         appointmentCount,
                         prescriptionCount,
+                        documentCount: doctor.documents.length,
                     },
+                    documents: doctor.documents.map(doc => {
+                        const pathInBucket = doc.fileUrl.replace(/^doctor-documents\//, '')
+                        const { data } = supabase.storage
+                            .from('doctor-documents')
+                            .getPublicUrl(pathInBucket)
+                        return {
+                            id: doc.id,
+                            title: doc.title,
+                            fileName: doc.fileName,
+                            fileType: doc.fileType,
+                            status: doc.status,
+                            uploadedAt: doc.uploadedAt,
+                            publicUrl: data.publicUrl,
+                            size: doc.size,
+                        }
+                    }),
                 }
             })
         )

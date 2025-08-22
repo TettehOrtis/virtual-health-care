@@ -23,7 +23,7 @@ export default function AdminSidebar() {
     const router = useRouter();
 
     return (
-        <aside className="w-64 shrink-0 border-r border-border bg-gradient-card h-full">
+        <aside className="w-64 shrink-0 border-r border-border bg-gradient-card h-full p-4 mt-0 mb-0 pb-20 ml-0 bg-white text-black">
             <div className="p-4">
                 <p className="text-xs font-semibold text-muted-foreground mb-2">Admin</p>
                 <nav className="space-y-1">

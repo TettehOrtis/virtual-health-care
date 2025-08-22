@@ -52,6 +52,13 @@ const getAppointments = async (req: NextApiRequest, res: NextApiResponse) => {
                             }
                         }
                     }
+                },
+                payment: {
+                    select: {
+                        status: true,
+                        amount: true,
+                        currency: true
+                    }
                 }
             },
             orderBy: {

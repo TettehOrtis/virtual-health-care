@@ -168,8 +168,8 @@ export default function AdminDoctors() {
         return (
             <AdminLayout>
                 <div className="space-y-6">
-                    <h2 className="text-3xl font-bold text-foreground">Doctors Management</h2>
-                    <div className="text-muted-foreground">Loading doctors...</div>
+                    <h2 className="text-3xl font-bold text-gray-900">Doctors Management</h2>
+                    <div className="text-gray-600">Loading doctors...</div>
                 </div>
             </AdminLayout>
         );
@@ -179,22 +179,22 @@ export default function AdminDoctors() {
         <AdminLayout>
             <div className="space-y-6">
                 <div>
-                    <h2 className="text-3xl font-bold text-foreground">Doctors Management</h2>
-                    <p className="text-muted-foreground">Manage doctor profiles, documents, and approval status</p>
+                    <h2 className="text-3xl font-bold text-gray-900">Doctors Management</h2>
+                    <p className="text-gray-600">Manage doctor profiles, documents, and approval status</p>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {doctors.map((doctor) => (
-                        <Card key={doctor.id} className="bg-gradient-card border border-border shadow-card">
+                        <Card key={doctor.id} className="bg-white border border-gray-200 shadow-sm">
                             <CardHeader>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center space-x-3">
-                                        <div className="bg-primary/10 p-2 rounded-lg">
-                                            <User className="w-5 h-5 text-primary" />
+                                        <div className="bg-blue-100 p-2 rounded-lg">
+                                            <User className="w-5 h-5 text-blue-600" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-lg">{doctor.name}</CardTitle>
-                                            <p className="text-sm text-muted-foreground">{doctor.specialization}</p>
+                                            <CardTitle className="text-lg text-gray-900">{doctor.name}</CardTitle>
+                                            <p className="text-sm text-gray-600">{doctor.specialization}</p>
                                         </div>
                                     </div>
                                     {getStatusBadge(doctor.status)}
@@ -205,70 +205,70 @@ export default function AdminDoctors() {
                                 {/* Contact Information */}
                                 <div className="space-y-2">
                                     <div className="flex items-center space-x-2 text-sm">
-                                        <Mail className="w-4 h-4 text-muted-foreground" />
-                                        <span>{doctor.email}</span>
+                                        <Mail className="w-4 h-4 text-gray-500" />
+                                        <span className="text-gray-900">{doctor.email}</span>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm">
-                                        <Phone className="w-4 h-4 text-muted-foreground" />
-                                        <span>{doctor.phone}</span>
+                                        <Phone className="w-4 h-4 text-gray-500" />
+                                        <span className="text-gray-900">{doctor.phone}</span>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm">
-                                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                                        <span>{doctor.address}</span>
+                                        <MapPin className="w-4 h-4 text-gray-500" />
+                                        <span className="text-gray-900">{doctor.address}</span>
                                     </div>
                                     <div className="flex items-center space-x-2 text-sm">
-                                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                                        <span>Joined {new Date(doctor.createdAt).toLocaleDateString()}</span>
+                                        <Calendar className="w-4 h-4 text-gray-500" />
+                                        <span className="text-gray-900">Joined {new Date(doctor.createdAt).toLocaleDateString()}</span>
                                     </div>
                                 </div>
 
                                 {/* Statistics */}
-                                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-border">
+                                <div className="grid grid-cols-3 gap-4 pt-4 border-t border-gray-200">
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-foreground">{doctor.stats.appointmentCount}</p>
-                                        <p className="text-xs text-muted-foreground">Appointments</p>
+                                        <p className="text-2xl font-bold text-gray-900">{doctor.stats.appointmentCount}</p>
+                                        <p className="text-xs text-gray-600">Appointments</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-foreground">{doctor.stats.prescriptionCount}</p>
-                                        <p className="text-xs text-muted-foreground">Prescriptions</p>
+                                        <p className="text-2xl font-bold text-gray-900">{doctor.stats.prescriptionCount}</p>
+                                        <p className="text-xs text-gray-600">Prescriptions</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold text-foreground">{doctor.stats.documentCount}</p>
-                                        <p className="text-xs text-muted-foreground">Documents</p>
+                                        <p className="text-2xl font-bold text-gray-900">{doctor.stats.documentCount}</p>
+                                        <p className="text-xs text-gray-600">Documents</p>
                                     </div>
                                 </div>
 
                                 {/* Documents Section */}
                                 {doctor.documents.length > 0 && (
-                                    <div className="pt-4 border-t border-border">
-                                        <h4 className="font-medium text-foreground mb-3 flex items-center">
+                                    <div className="pt-4 border-t border-gray-200">
+                                        <h4 className="font-medium text-gray-900 mb-3 flex items-center">
                                             <FileText className="w-4 h-4 mr-2" />
                                             Uploaded Documents
                                         </h4>
                                         <div className="space-y-2">
                                             {doctor.documents.map((doc) => (
-                                                <div key={doc.id} className="flex items-center justify-between p-2 bg-muted/30 rounded-lg">
+                                                <div key={doc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                                                     <div className="flex items-center space-x-2">
-                                                        <FileText className="w-4 h-4 text-muted-foreground" />
+                                                        <FileText className="w-4 h-4 text-gray-500" />
                                                         <div>
-                                                            <p className="text-sm font-medium">{doc.title}</p>
-                                                            <p className="text-xs text-muted-foreground">{doc.fileName}</p>
+                                                            <p className="text-sm font-medium text-gray-900">{doc.title}</p>
+                                                            <p className="text-xs text-gray-600">{doc.fileName}</p>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
                                                         {getDocumentStatusBadge(doc.status)}
                                                         {doc.size ? (
-                                                            <span className="text-xs text-muted-foreground">{(doc.size / 1024).toFixed(1)} KB</span>
+                                                            <span className="text-xs text-gray-600">{(doc.size / 1024).toFixed(1)} KB</span>
                                                         ) : null}
-                                                        <Button size="sm" variant="ghost" onClick={() => handleViewDocument(doc)}>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleViewDocument(doc)} className="text-gray-700 hover:text-gray-900">
                                                             <Eye className="w-4 h-4" />
                                                         </Button>
-                                                        <Button size="sm" variant="ghost" onClick={() => handleDownloadDocument(doc)}>
+                                                        <Button size="sm" variant="ghost" onClick={() => handleDownloadDocument(doc)} className="text-gray-700 hover:text-gray-900">
                                                             <Download className="w-4 h-4" />
                                                         </Button>
                                                         {doc.status === 'PENDING' && (
                                                             <>
-                                                                <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleDocumentStatusUpdate(doc.id, 'APPROVED')}>
+                                                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white" onClick={() => handleDocumentStatusUpdate(doc.id, 'APPROVED')}>
                                                                     <CheckCircle className="w-4 h-4 mr-1" />
                                                                     Approve
                                                                 </Button>
@@ -279,7 +279,7 @@ export default function AdminDoctors() {
                                                             </>
                                                         )}
                                                         {doc.status === 'APPROVED' && (
-                                                            <Button size="sm" variant="outline" onClick={() => handleDocumentStatusUpdate(doc.id, 'REJECTED')}>
+                                                            <Button size="sm" variant="outline" onClick={() => handleDocumentStatusUpdate(doc.id, 'REJECTED')} className="border-gray-300 text-gray-700">
                                                                 <XCircle className="w-4 h-4 mr-1" />
                                                                 Reject
                                                             </Button>
@@ -292,12 +292,12 @@ export default function AdminDoctors() {
                                 )}
 
                                 {/* Action Buttons */}
-                                <div className="flex space-x-2 pt-4 border-t border-border">
+                                <div className="flex space-x-2 pt-4 border-t border-gray-200">
                                     {doctor.status === 'PENDING' && (
                                         <>
                                             <Button
                                                 size="sm"
-                                                className="bg-green-600 hover:bg-green-700"
+                                                className="bg-green-600 hover:bg-green-700 text-white"
                                                 onClick={() => handleStatusUpdate(doctor.id, 'APPROVED')}
                                             >
                                                 <CheckCircle className="w-4 h-4 mr-1" />
@@ -318,6 +318,7 @@ export default function AdminDoctors() {
                                             size="sm"
                                             variant="outline"
                                             onClick={() => handleStatusUpdate(doctor.id, 'SUSPENDED')}
+                                            className="border-gray-300 text-gray-700"
                                         >
                                             <AlertTriangle className="w-4 h-4 mr-1" />
                                             Suspend
@@ -326,7 +327,7 @@ export default function AdminDoctors() {
                                     {(doctor.status === 'REJECTED' || doctor.status === 'SUSPENDED') && (
                                         <Button
                                             size="sm"
-                                            className="bg-green-600 hover:bg-green-700"
+                                            className="bg-green-600 hover:bg-green-700 text-white"
                                             onClick={() => handleStatusUpdate(doctor.id, 'APPROVED')}
                                         >
                                             <CheckCircle className="w-4 h-4 mr-1" />
@@ -341,9 +342,9 @@ export default function AdminDoctors() {
 
                 {doctors.length === 0 && (
                     <div className="text-center py-12">
-                        <User className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">No doctors found</h3>
-                        <p className="text-muted-foreground">Doctors will appear here once they register and upload their documents.</p>
+                        <User className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">No doctors found</h3>
+                        <p className="text-gray-600">Doctors will appear here once they register and upload their documents.</p>
                     </div>
                 )}
             </div>

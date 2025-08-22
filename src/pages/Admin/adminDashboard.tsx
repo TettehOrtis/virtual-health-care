@@ -91,7 +91,7 @@ export default function AdminDashboard() {
 
     return (
         <AdminLayout>
-            <div className="space-y-6">
+            <div className="space-y-6 p-6 bg-white">
                 <div>
                     <h2 className="text-3xl font-bold text-foreground">Admin Dashboard</h2>
                     <p className="text-muted-foreground">Overview of your healthcare platform</p>

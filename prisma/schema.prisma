@@ -45,6 +45,7 @@ model User {
   // Chat relations
   sentMessages         Message[]      @relation("SentMessages")
   notifications        Notification[]
+  payments             Payment[]
 
   @@index([supabaseId])
   @@index([email])
@@ -119,6 +120,7 @@ model Appointment {
   updatedAt DateTime          @updatedAt
   doctor    Doctor            @relation(fields: [doctorId], references: [id])
   patient   Patient           @relation(fields: [patientId], references: [id])
+  payment   Payment?
 
   @@index([patientId])
   @@index([doctorId])
@@ -204,6 +206,41 @@ model Notification {
   user User @relation(fields: [userId], references: [id])
 }
 
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  USSD
+  MOBILE_MONEY
+}
+
+model Payment {
+  id            String        @id @default(uuid())
+  userId        String
+  appointmentId String?       @unique
+  amount        Decimal       @db.Decimal(10,2)
+  currency      String        @default("NGN")
+  method        PaymentMethod
+  status        PaymentStatus @default(PENDING)
+  paystackRef   String?       // Paystack reference
+  description   String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id])
+  appointment   Appointment?  @relation(fields: [appointmentId], references: [id])
+
+  @@index([userId])
+  @@index([paystackRef])
+  @@index([status])
+  @@index([createdAt])
+}
 
 
 enum Role {

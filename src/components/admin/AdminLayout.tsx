@@ -9,7 +9,7 @@ interface AdminLayoutProps {
 export default function AdminLayout({ children }: AdminLayoutProps) {
     return (
         <MainLayout>
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-4 py-6 bg-gray-50">
                 <div className="flex gap-6 min-h-[70vh]">
                     <AdminSidebar />
                     <section className="flex-1">{children}</section>

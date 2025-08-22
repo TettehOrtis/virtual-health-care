@@ -163,8 +163,26 @@ const BookAppointment = () => {
                 return;
             }
 
-            // Create appointment
-            const response = await fetch("/api/patients/appointments", {
+            // Get current user info to get the correct patientId
+            const userRes = await fetch("/api/auth/me", {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (!userRes.ok) {
+                toast.error("Failed to get user info");
+                return;
+            }
+
+            const userData = await userRes.json();
+            console.log("User data:", userData);
+
+            if (!userData.patientId) {
+                toast.error("Patient record not found for this user");
+                return;
+            }
+
+            // Initiate booking with payment using the correct patientId
+            const response = await fetch("/api/appointments/initiate-booking", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -172,23 +190,26 @@ const BookAppointment = () => {
                 },
                 body: JSON.stringify({
                     doctorId: selectedDoctor,
+                    patientId: userData.patientId, // Use the correct patientId from user data
                     date: dateTime,
-                    notes,
-                    type: appointmentType
+                    time: dateTime.split('T')[1] || null,
+                    reason: notes,
+                    amount: 5000, // NGN 5000 for now
+                    description: "Consultation payment",
+                    appointmentType: appointmentType, // Include the appointment type
                 }),
             });
 
-            if (response.ok) {
-                toast.success("Appointment booked successfully");
-                // Redirect to appointments page
-                router.push(`/patient-frontend/${patientId}/appointments`);
+            const data = await response.json();
+            if (response.ok && data.authorizationUrl) {
+                toast.success("Redirecting to payment...");
+                window.location.href = data.authorizationUrl;
             } else {
-                const errorData = await response.json();
-                toast.error(errorData.error || "Failed to book appointment");
+                toast.error(data.error || "Failed to initiate booking/payment");
             }
         } catch (error: any) {
-            console.error("Error booking appointment:", error);
-            toast.error("An error occurred while booking your appointment");
+            console.error("Error initiating booking/payment:", error);
+            toast.error("An error occurred while processing your booking/payment");
         } finally {
             setIsSubmitting(false);
         }
@@ -413,51 +434,51 @@ const BookAppointment = () => {
                                                 Appointment Type
                                             </Label>
 
-                                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                            <h3 className="font-semibold text-gray-900 mb-2">Appointment Information</h3>
-                                            <ul className="space-y-2">
-                                                <li className="flex justify-between">
-                                                    <span className="text-gray-600">Consultation Fee</span>
-                                                    <span className="font-medium text-gray-900">$50.00</span>
-                                                </li>
-                                                <li className="flex justify-between">
-                                                    <span className="text-gray-600">Duration</span>
-                                                    <span className="font-medium text-gray-900">30 minutes</span>
-                                                </li>
-                                            </ul>
-                                            <div className="mt-4 pt-4 border-t border-gray-200">
-                                                <p className="text-sm text-gray-600">
-                                                    Payment will be processed after the appointment is confirmed by the doctor.
-                                                </p>
+                                            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                                <h3 className="font-semibold text-gray-900 mb-2">Appointment Information</h3>
+                                                <ul className="space-y-2">
+                                                    <li className="flex justify-between">
+                                                        <span className="text-gray-600">Consultation Fee</span>
+                                                        <span className="font-medium text-gray-900">$50.00</span>
+                                                    </li>
+                                                    <li className="flex justify-between">
+                                                        <span className="text-gray-600">Duration</span>
+                                                        <span className="font-medium text-gray-900">30 minutes</span>
+                                                    </li>
+                                                </ul>
+                                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                                    <p className="text-sm text-blue-600 font-medium">
+                                                        You will be redirected to Paystack to complete your payment and confirm your appointment.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col md:flex-row justify-end gap-4">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    disabled={isSubmitting}
+                                                    onClick={() => setBookingStep(1)}
+                                                >
+                                                    Back
+                                                </Button>
+                                                <Button
+                                                    type="submit"
+                                                    disabled={isSubmitting || !dateTime}
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                                                >
+                                                    {isSubmitting ? (
+                                                        <>
+                                                            <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
+                                                            Processing...
+                                                        </>
+                                                    ) : (
+                                                        "Book Appointment"
+                                                    )}
+                                                </Button>
                                             </div>
                                         </div>
-
-                                        <div className="flex flex-col md:flex-row justify-end gap-4">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                disabled={isSubmitting}
-                                                onClick={() => setBookingStep(1)}
-                                            >
-                                                Back
-                                            </Button>
-                                            <Button
-                                                type="submit"
-                                                disabled={isSubmitting || !dateTime}
-                                                className="bg-blue-600 hover:bg-blue-700 text-white"
-                                            >
-                                                {isSubmitting ? (
-                                                    <>
-                                                        <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
-                                                        Processing...
-                                                    </>
-                                                ) : (
-                                                    "Book Appointment"
-                                                )}
-                                            </Button>
-                                        </div>
                                     </div>
-                                </div>
                                 </form>
                             )}
                         </div>

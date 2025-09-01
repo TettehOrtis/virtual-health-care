@@ -46,7 +46,7 @@ const DoctorProfile = () => {
     email: "",
   });
 
-  // Define sidebar items with the doctorId in the paths
+  // sidebar items with the doctorId 
   const sidebarItems = [
     {
       title: 'Dashboard',
